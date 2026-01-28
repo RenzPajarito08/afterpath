@@ -179,7 +179,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
       >
           <Polyline 
             coordinates={routeCoordinates}
-            strokeColor="#48BB78" // Frieren Green
+            strokeColor="#48BB78"
             strokeWidth={4}
           />
       </MapView>
