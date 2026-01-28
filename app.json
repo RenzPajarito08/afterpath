@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "frieren-journey",
-    "slug": "frieren-journey",
+    "name": "afterpath",
+    "slug": "afterpath",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,7 +11,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Frieren Journey to use your location to track your journeys."
+          "locationAlwaysAndWhenInUsePermission": "Allow Afterpath to use your location to track your journeys."
         }
       ],
       "expo-secure-store"
@@ -24,12 +24,12 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow Frieren Journey to use your location to track your journeys.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Frieren Journey to use your location to track your journeys."
+        "NSLocationWhenInUseUsageDescription": "Allow Afterpath to use your location to track your journeys.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Afterpath to use your location to track your journeys."
       }
     },
     "android": {
-      "package": "com.frierenjourney",
+      "package": "com.afterpath",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -48,8 +48,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "c19c74ff-319d-4aec-a4e2-d711b8e4a2c6"
+        "projectId": "36ee505d-7bdc-46d1-aa83-99157797b374"
       }
-    }
+    },
+    "owner": "renzpajarito"
   }
 }

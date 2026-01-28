@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
-import { supabase } from '../lib/supabase';
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { supabase } from "../lib/supabase";
+import { RootStackParamList } from "../navigation/types";
 
-type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
+type WelcomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Welcome"
+>;
 
 interface Props {
   navigation: WelcomeScreenNavigationProp;
 }
 
 export default function WelcomeScreen({ navigation }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
@@ -38,27 +49,30 @@ export default function WelcomeScreen({ navigation }: Props) {
     });
 
     if (error) {
-        Alert.alert(error.message);
-        setLoading(false);
-        return;
+      Alert.alert(error.message);
+      setLoading(false);
+      return;
     }
 
     if (session?.user) {
-        // Create profile to satisfy foreign key constraint
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({ id: session.user.id, username: email });
-        
-        if (profileError) {
-             console.error("Profile creation failed", profileError);
-             // Optional: Alert user or handle gracefully
-        } else {
-             Alert.alert('Success', 'Please check your inbox for email verification!');
-        }
+      // Create profile to satisfy foreign key constraint
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({ id: session.user.id, username: email });
+
+      if (profileError) {
+        console.error("Profile creation failed", profileError);
+        // Optional: Alert user or handle gracefully
+      } else {
+        Alert.alert(
+          "Success",
+          "Please check your inbox for email verification!",
+        );
+      }
     } else {
-        Alert.alert('Please check your inbox for email verification!');
+      Alert.alert("Please check your inbox for email verification!");
     }
-    
+
     setLoading(false);
   }
 
@@ -66,7 +80,7 @@ export default function WelcomeScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.quote}>"Every journey leaves a memory."</Text>
-        
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -86,22 +100,27 @@ export default function WelcomeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.primaryButton}
             onPress={isLogin ? signInWithEmail : signUpWithEmail}
             disabled={loading}
           >
             {loading ? (
-                <ActivityIndicator color="#FFF" />
+              <ActivityIndicator color="#FFF" />
             ) : (
-                <Text style={styles.primaryButtonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+              <Text style={styles.primaryButtonText}>
+                {isLogin ? "Sign In" : "Sign Up"}
+              </Text>
             )}
           </TouchableOpacity>
-          
-          <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.switchButton}>
-              <Text style={styles.switchText}>
-                  {isLogin ? "No account? Sign Up" : "Have an account? Sign In"}
-              </Text>
+
+          <TouchableOpacity
+            onPress={() => setIsLogin(!isLogin)}
+            style={styles.switchButton}
+          >
+            <Text style={styles.switchText}>
+              {isLogin ? "No account? Sign Up" : "Have an account? Sign In"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -112,57 +131,57 @@ export default function WelcomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F2',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F7F7F2",
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     padding: 24,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   quote: {
     fontSize: 24,
-    fontStyle: 'italic',
-    color: '#4A5568',
+    fontStyle: "italic",
+    color: "#4A5568",
     marginBottom: 48,
-    textAlign: 'center',
-    fontFamily: 'System', 
+    textAlign: "center",
+    fontFamily: "System",
   },
   inputContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: 24,
     gap: 16,
   },
   input: {
-      backgroundColor: '#FFF',
-      padding: 16,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#E2E8F0',
-      width: '100%',
+    backgroundColor: "#FFF",
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    width: "100%",
   },
   buttonContainer: {
-    width: '100%',
+    width: "100%",
     gap: 16,
   },
   primaryButton: {
-    backgroundColor: '#2D3748',
+    backgroundColor: "#2D3748",
     paddingVertical: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   switchButton: {
-      alignItems: 'center',
-      marginTop: 8,
+    alignItems: "center",
+    marginTop: 8,
   },
   switchText: {
-      color: '#4A5568',
-      textDecorationLine: 'underline',
+    color: "#4A5568",
+    textDecorationLine: "underline",
   },
 });
