@@ -1,6 +1,6 @@
 # Android APK Build Instructions
 
-This guide will help you build an APK file for your Frieren Journey app that can be installed on any Android device.
+This guide will help you build an APK file for your Afterpath app that can be installed on any Android device.
 
 ## Prerequisites
 1. **Expo Account**: You need an Expo account to use EAS Build
@@ -20,7 +20,7 @@ eas login
 Enter your Expo credentials when prompted.
 
 ### 3. Configure the Project (Already Done)
-✅ `app.json` has been configured with package name: `com.antigravity.frierenjourney`
+✅ `app.json` has been configured with package name: `com.afterpath`
 ✅ `eas.json` has been created with build profiles
 
 ### 4. Build the APK
