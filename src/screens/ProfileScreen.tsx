@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 // If DateTimePicker is not installed, we can use a simple text input or ask user to install it.
@@ -19,6 +20,7 @@ import { supabase } from "../lib/supabase";
 // If available, users typically use @react-native-community/datetimepicker. I will stick to text for simplicity unless I see it in package.json later.
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -114,7 +116,15 @@ export default function ProfileScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingTop: Math.max(insets.top, 24),
+            paddingBottom: Math.max(insets.bottom, 24),
+          },
+        ]}
+      >
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <User size={64} color="#A0AEC0" />
@@ -210,7 +220,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 24,
-    paddingTop: 60,
   },
   centerContainer: {
     flex: 1,
