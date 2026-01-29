@@ -62,7 +62,7 @@ export default function TimelineScreen({ navigation }: Props) {
 
   return (
     <ImageBackground
-      source={require("../assets/parchment_texture.png")}
+      source={require("../../assets/parchment_texture.png")}
       style={styles.container}
       imageStyle={{ opacity: 0.3 }}
     >
@@ -106,7 +106,7 @@ export default function TimelineScreen({ navigation }: Props) {
                 }
               >
                 <ImageBackground
-                  source={require("../assets/parchment_texture.png")}
+                  source={require("../../assets/parchment_texture.png")}
                   style={styles.card}
                   imageStyle={styles.cardParchment}
                 >

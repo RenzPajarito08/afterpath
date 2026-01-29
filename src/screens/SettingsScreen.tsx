@@ -41,7 +41,7 @@ const SettingRow = ({
 }: any) => (
   <View style={styles.rowContainer}>
     <ImageBackground
-      source={require("../assets/parchment_texture.png")}
+      source={require("../../assets/parchment_texture.png")}
       style={styles.rowParchment}
       imageStyle={styles.parchmentImage}
     >

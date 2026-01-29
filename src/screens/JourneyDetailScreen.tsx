@@ -68,7 +68,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
   if (loading || !journey) {
     return (
       <ImageBackground
-        source={require("../assets/parchment_texture.png")}
+        source={require("../../assets/parchment_texture.png")}
         style={styles.loadingContainer}
       >
         <ActivityIndicator color="#2F4F4F" size="large" />
@@ -120,7 +120,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
       </View>
 
       <ImageBackground
-        source={require("../assets/parchment_texture.png")}
+        source={require("../../assets/parchment_texture.png")}
         style={styles.contentParchment}
         imageStyle={styles.parchmentImage}
       >

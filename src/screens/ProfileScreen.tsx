@@ -34,7 +34,7 @@ type NavigationProp = NativeStackNavigationProp<
 const StatRow = ({ icon: Icon, label, value, subtext }: any) => (
   <View style={styles.statContainer}>
     <ImageBackground
-      source={require("../assets/parchment_texture.png")}
+      source={require("../../assets/parchment_texture.png")}
       style={styles.statParchment}
       imageStyle={styles.parchmentImage}
     >
@@ -99,7 +99,7 @@ export default function ProfileScreen() {
   if (loading && !firstName) {
     return (
       <ImageBackground
-        source={require("../assets/parchment_texture.png")}
+        source={require("../../assets/parchment_texture.png")}
         style={styles.centerContainer}
       >
         <ActivityIndicator size="large" color="#2F4F4F" />
@@ -121,7 +121,7 @@ export default function ProfileScreen() {
         bounces={false}
       >
         <ImageBackground
-          source={require("../assets/fantasy_header.png")}
+          source={require("../../assets/fantasy_header.png")}
           style={styles.headerBg}
           resizeMode="cover"
         >
@@ -137,7 +137,7 @@ export default function ProfileScreen() {
             </View>
 
             <ImageBackground
-              source={require("../assets/parchment_texture.png")}
+              source={require("../../assets/parchment_texture.png")}
               style={styles.identityCard}
               imageStyle={styles.parchmentImage}
             >

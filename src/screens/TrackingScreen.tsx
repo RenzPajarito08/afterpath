@@ -270,7 +270,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
       <View style={[styles.overlay, { bottom: Math.max(insets.bottom, 20) }]}>
         <ImageBackground
-          source={require("../assets/parchment_texture.png")}
+          source={require("../../assets/parchment_texture.png")}
           style={styles.statsCard}
           imageStyle={styles.cardParchment}
           resizeMode="cover"
@@ -289,7 +289,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
         <View style={styles.controls}>
           <TouchableOpacity onPress={togglePause} activeOpacity={0.8}>
             <ImageBackground
-              source={require("../assets/parchment_texture.png")}
+              source={require("../../assets/parchment_texture.png")}
               style={[styles.sealButton, styles.playPauseSeal]}
               imageStyle={styles.sealParchment}
             >

@@ -40,7 +40,7 @@ export default function StartJourneyScreen({ navigation }: Props) {
 
   return (
     <ImageBackground
-      source={require("../assets/frieren_landscape.png")}
+      source={require("../../assets/frieren_landscape.png")}
       style={styles.container}
       resizeMode="cover"
     >
@@ -82,7 +82,7 @@ export default function StartJourneyScreen({ navigation }: Props) {
                 onPress={() => setSelectedActivity(activity.id)}
               >
                 <ImageBackground
-                  source={require("../assets/parchment_texture.png")}
+                  source={require("../../assets/parchment_texture.png")}
                   style={styles.activityCard}
                   imageStyle={[
                     styles.cardParchment,

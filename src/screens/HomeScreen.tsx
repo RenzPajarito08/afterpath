@@ -102,7 +102,7 @@ export default function HomeScreen({ navigation }: Props) {
       }
     >
       <ImageBackground
-        source={require("../assets/fantasy_header.png")}
+        source={require("../../assets/fantasy_header.png")}
         style={styles.headerImage}
         resizeMode="cover"
       >
@@ -114,7 +114,7 @@ export default function HomeScreen({ navigation }: Props) {
 
       <View style={styles.content}>
         <ImageBackground
-          source={require("../assets/parchment_texture.png")}
+          source={require("../../assets/parchment_texture.png")}
           style={styles.startCard}
           imageStyle={styles.cardParchment}
         >
@@ -171,7 +171,7 @@ export default function HomeScreen({ navigation }: Props) {
               style={styles.journeyCardContainer}
             >
               <ImageBackground
-                source={require("../assets/parchment_texture.png")}
+                source={require("../../assets/parchment_texture.png")}
                 style={styles.journeyCard}
                 imageStyle={styles.cardParchment}
               >

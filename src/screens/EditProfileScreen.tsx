@@ -122,7 +122,7 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <ImageBackground
-        source={require("../assets/parchment_texture.png")}
+        source={require("../../assets/parchment_texture.png")}
         style={styles.centerContainer}
       >
         <ActivityIndicator size="large" color="#2F4F4F" />
@@ -132,7 +132,7 @@ export default function EditProfileScreen() {
 
   return (
     <ImageBackground
-      source={require("../assets/parchment_texture.png")}
+      source={require("../../assets/parchment_texture.png")}
       style={styles.container}
     >
       <KeyboardAvoidingView
