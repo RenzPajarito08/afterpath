@@ -71,11 +71,11 @@ export default function SummaryScreen({ navigation, route }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         style={styles.container}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.contentContainer,
           {
