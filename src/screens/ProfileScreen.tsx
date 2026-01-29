@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   fullName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "600",
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   journeyTitle: {
     color: "#2D3748",
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
     fontWeight: "300",
   },
@@ -302,17 +302,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   statSubtext: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#718096",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",

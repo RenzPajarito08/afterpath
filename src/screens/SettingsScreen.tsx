@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 40,
+    fontSize: 20,
     fontWeight: "700",
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   sectionHeader: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "600",
     color: "#2D3748",
     marginBottom: 16,
@@ -221,12 +221,12 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   label: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   value: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#718096",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },

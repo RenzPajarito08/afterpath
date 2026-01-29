@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 32,
+    fontSize: 20,
     fontWeight: "700",
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: "#FFF",
     fontWeight: "700",
-    fontSize: 18,
+    fontSize: 16,
   },
   disabledButton: {
     opacity: 0.7,
