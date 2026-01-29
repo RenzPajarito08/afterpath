@@ -224,6 +224,7 @@ export default function ProfileScreen() {
                 value={editFirstName}
                 onChangeText={setEditFirstName}
                 placeholder="Name given at birth"
+                maxLength={25}
               />
             </View>
 
@@ -234,6 +235,7 @@ export default function ProfileScreen() {
                 value={editLastName}
                 onChangeText={setEditLastName}
                 placeholder="Family descent"
+                maxLength={25}
               />
             </View>
 
@@ -339,6 +341,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
+    flex: 1,
+    marginRight: 12,
   },
   avatarContainer: {
     width: 80,
@@ -357,6 +361,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   identityInfo: {
+    flex: 1,
     justifyContent: "center",
   },
   fullName: {
