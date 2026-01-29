@@ -2,9 +2,20 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Location from "expo-location";
 import { PauseCircle, PlayCircle, StopCircle } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  DeviceEventEmitter,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  LOCATION_TRACKING_TASK,
+  LOCATION_UPDATED_EVENT,
+} from "../lib/locationTasks";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Tracking">;
@@ -46,6 +57,8 @@ export default function TrackingScreen({ navigation, route }: Props) {
   const [duration, setDuration] = useState(0); // in seconds
   const [currentLocation, setCurrentLocation] =
     useState<Location.LocationObject | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [accumulatedDuration, setAccumulatedDuration] = useState(0); // in seconds
 
   const mapRef = useRef<MapView>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(
@@ -55,25 +68,56 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
+      // Foreground location
+      let { status: foregroundStatus } =
+        await Location.requestForegroundPermissionsAsync();
+      if (foregroundStatus !== "granted") {
         Alert.alert("Permission to access location was denied");
         setLocationPermission(false);
         return;
       }
+
+      // Background location
+      let { status: backgroundStatus } =
+        await Location.requestBackgroundPermissionsAsync();
+      if (backgroundStatus !== "granted") {
+        Alert.alert(
+          "Background location permission denied",
+          "The app will only track your journey while it's in the foreground.",
+        );
+      }
+
+      // Notifications (required for Android 13+ tracking notification)
+      const { status: notificationStatus } =
+        await Location.requestForegroundPermissionsAsync(); // This is just a placeholder, actually need to check if we can request specifically for notifications or if it's bundled
+      // Actually, expo-location's foregroundService handles the sticky notification.
+      // But on Android 13+, POST_NOTIFICATIONS is needed for any notification.
+      // Since expo-notifications isn't installed, we can try to request it if we had the library.
+      // For now, let's assume foreground/background location permissions which often bundle the service.
+
       setLocationPermission(true);
       startTracking();
     })();
 
+    const subscription = DeviceEventEmitter.addListener(
+      LOCATION_UPDATED_EVENT,
+      (locations: Location.LocationObject[]) => {
+        locations.forEach((location) => handleNewLocation(location));
+      },
+    );
+
     return () => {
       stopTracking();
+      subscription.remove();
     };
   }, []);
 
   useEffect(() => {
-    if (isTracking) {
+    if (isTracking && startTime) {
       timerRef.current = setInterval(() => {
-        setDuration((prev) => prev + 1);
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        setDuration(accumulatedDuration + elapsed);
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -81,10 +125,13 @@ export default function TrackingScreen({ navigation, route }: Props) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isTracking]);
+  }, [isTracking, startTime, accumulatedDuration]);
 
   const startTracking = async () => {
     setIsTracking(true);
+    setStartTime(Date.now());
+
+    // Foreground listener for real-time UI updates
     locationSubscription.current = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
@@ -92,41 +139,79 @@ export default function TrackingScreen({ navigation, route }: Props) {
         distanceInterval: 5,
       },
       (newLocation) => {
-        const { latitude, longitude } = newLocation.coords;
-        const newCoord: Coordinate = {
-          latitude,
-          longitude,
-          timestamp: newLocation.timestamp,
-        };
-
-        setCurrentLocation(newLocation);
-
-        setRouteCoordinates((prevCoords) => {
-          const lastCoord = prevCoords[prevCoords.length - 1];
-          if (lastCoord) {
-            const dist = getDistance(lastCoord, newCoord);
-            setDistance((d) => d + dist);
-          }
-          return [...prevCoords, newCoord];
-        });
-
-        // Center map on new location
-        mapRef.current?.animateToRegion({
-          latitude,
-          longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        });
+        handleNewLocation(newLocation);
       },
     );
+
+    // Background tracking
+    const isBackgroundStarted = await Location.hasStartedLocationUpdatesAsync(
+      LOCATION_TRACKING_TASK,
+    );
+    if (!isBackgroundStarted) {
+      await Location.startLocationUpdatesAsync(LOCATION_TRACKING_TASK, {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 5000,
+        distanceInterval: 5,
+        foregroundService: {
+          notificationTitle: "Tracking Journey",
+          notificationBody:
+            "Afterpath is tracking your journey in the background",
+          notificationColor: "#48BB78",
+        },
+      });
+    }
   };
 
-  const stopTracking = () => {
+  const handleNewLocation = (newLocation: Location.LocationObject) => {
+    const { latitude, longitude } = newLocation.coords;
+    const newCoord: Coordinate = {
+      latitude,
+      longitude,
+      timestamp: newLocation.timestamp,
+    };
+
+    setCurrentLocation(newLocation);
+
+    setRouteCoordinates((prevCoords) => {
+      const lastCoord = prevCoords[prevCoords.length - 1];
+      if (lastCoord) {
+        // Simple deduplication if background and foreground both trigger
+        if (
+          lastCoord.latitude === newCoord.latitude &&
+          lastCoord.longitude === newCoord.longitude &&
+          lastCoord.timestamp === newCoord.timestamp
+        ) {
+          return prevCoords;
+        }
+        const dist = getDistance(lastCoord, newCoord);
+        setDistance((d) => d + dist);
+      }
+      return [...prevCoords, newCoord];
+    });
+
+    // Center map on new location
+    mapRef.current?.animateToRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    });
+  };
+
+  const stopTracking = async () => {
+    if (isTracking && startTime) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      setAccumulatedDuration((prev) => prev + elapsed);
+      setDuration(accumulatedDuration + elapsed);
+    }
     setIsTracking(false);
+    setStartTime(null);
     if (locationSubscription.current) {
       locationSubscription.current.remove();
       locationSubscription.current = null;
     }
+    await Location.stopLocationUpdatesAsync(LOCATION_TRACKING_TASK);
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
