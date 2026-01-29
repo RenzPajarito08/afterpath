@@ -5,13 +5,13 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   DeviceEventEmitter,
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   LOCATION_TRACKING_TASK,
   LOCATION_UPDATED_EVENT,
@@ -46,6 +46,7 @@ function getDistance(coord1: Coordinate, coord2: Coordinate) {
 }
 
 export default function TrackingScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const { activityType } = route.params;
   const [locationPermission, setLocationPermission] = useState<boolean | null>(
     null,
@@ -281,7 +282,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
         />
       </MapView>
 
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { bottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{(distance / 1000).toFixed(2)}</Text>
@@ -325,12 +326,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
+    ...StyleSheet.absoluteFillObject,
   },
   overlay: {
     position: "absolute",
-    bottom: 40,
     left: 20,
     right: 20,
     alignItems: "center",

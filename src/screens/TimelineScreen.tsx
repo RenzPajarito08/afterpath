@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { RootStackParamList } from "../navigation/types";
@@ -30,6 +31,7 @@ interface Journey {
 }
 
 export default function TimelineScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,11 +59,14 @@ export default function TimelineScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 16) }]}>
       <Text style={styles.headerTitle}>Your Timeline</Text>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 40) },
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -106,7 +111,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F7F7F2",
-    paddingTop: 60,
   },
   headerTitle: {
     fontSize: 24,
@@ -117,7 +121,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
   },
   timelineLine: {
     position: "absolute",

@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { RootStackParamList } from "../navigation/types";
@@ -21,6 +22,7 @@ import { RootStackParamList } from "../navigation/types";
 type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
 
 export default function SummaryScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const { distance, duration, coordinates, activityType } = route.params;
   const { user } = useAuth();
 
@@ -74,7 +76,13 @@ export default function SummaryScreen({ navigation, route }: Props) {
     >
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingTop: Math.max(insets.top, 24),
+            paddingBottom: Math.max(insets.bottom, 24),
+          },
+        ]}
       >
         <Text style={styles.headerTitle}>Journey Complete</Text>
 
@@ -151,7 +159,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 24,
-    paddingTop: 60,
     flexGrow: 1,
   },
   headerTitle: {
