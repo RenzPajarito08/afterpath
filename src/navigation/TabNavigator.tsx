@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Calendar, Home, User } from "lucide-react-native";
 import React from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import TimelineScreen from "../screens/TimelineScreen";
@@ -8,6 +9,7 @@ import TimelineScreen from "../screens/TimelineScreen";
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -18,6 +20,8 @@ export default function TabNavigator() {
           borderTopWidth: 1,
           borderTopColor: "#E2E8F0",
           backgroundColor: "#FFF",
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
         },
       }}
