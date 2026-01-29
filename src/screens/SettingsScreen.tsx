@@ -18,6 +18,7 @@ import {
 import React from "react";
 import {
   Alert,
+  ImageBackground,
   Platform,
   ScrollView,
   StyleSheet,
@@ -38,18 +39,30 @@ const SettingRow = ({
   onPress,
   isDestructive,
 }: any) => (
-  <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
-    <View style={styles.iconCircle}>
-      <Icon size={20} color={isDestructive ? "#B55D5D" : "#4A5D4E"} />
-    </View>
-    <View style={styles.rowContent}>
-      <Text style={[styles.label, isDestructive && styles.destructiveText]}>
-        {label}
-      </Text>
-      {value && <Text style={styles.value}>{value}</Text>}
-    </View>
-    {!isDestructive && <ChevronRight size={20} color="#718096" />}
-  </TouchableOpacity>
+  <View style={styles.rowContainer}>
+    <ImageBackground
+      source={require("../assets/parchment_texture.png")}
+      style={styles.rowParchment}
+      imageStyle={styles.parchmentImage}
+    >
+      <TouchableOpacity
+        style={styles.row}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.iconCircle}>
+          <Icon size={20} color={isDestructive ? "#B55D5D" : "#2F4F4F"} />
+        </View>
+        <View style={styles.rowContent}>
+          <Text style={[styles.label, isDestructive && styles.destructiveText]}>
+            {label}
+          </Text>
+          {value && <Text style={styles.value}>{value}</Text>}
+        </View>
+        {!isDestructive && <ChevronRight size={20} color="#718096" />}
+      </TouchableOpacity>
+    </ImageBackground>
+  </View>
 );
 
 const SectionHeader = ({ title }: { title: string }) => (
@@ -70,7 +83,6 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
           style={styles.backButton}
@@ -78,22 +90,22 @@ export default function SettingsScreen() {
         >
           <ChevronLeft size={28} color="#2D3748" />
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>Chronicle Settings</Text>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <SectionHeader title="Account" />
+        <SectionHeader title="Adventurer Identity" />
         <SettingRow
           icon={User}
-          label="Edit Profile"
+          label="Refine Identity"
           onPress={() => navigation.navigate("EditProfile")}
         />
         <SettingRow
           icon={Mail}
-          label="Email & Password"
+          label="Secret Passcodes"
           onPress={() =>
             Alert.alert(
               "Coming Soon",
@@ -103,7 +115,7 @@ export default function SettingsScreen() {
         />
         <SettingRow
           icon={Shield}
-          label="Privacy & Data"
+          label="Privacy & Wards"
           onPress={() =>
             Alert.alert(
               "Coming Soon",
@@ -114,43 +126,51 @@ export default function SettingsScreen() {
 
         <View style={styles.spacer} />
 
-        <SectionHeader title="Preferences" />
+        <SectionHeader title="Chronicle Preferences" />
         <SettingRow
           icon={Ruler}
-          label="Units"
+          label="Scales"
           value="(km)"
           onPress={() => {}}
         />
-        <SettingRow icon={Bell} label="Notifications" onPress={() => {}} />
+        <SettingRow icon={Bell} label="Winds of News" onPress={() => {}} />
         <SettingRow
           icon={Moon}
-          label="Theme"
+          label="Atmosphere"
           value="(Light)"
           onPress={() => {}}
         />
         <SettingRow
           icon={Volume2}
-          label="Quiet Mode"
+          label="Silence"
           value="(On)"
           onPress={() => {}}
         />
 
         <View style={styles.spacer} />
 
-        <SectionHeader title="Support" />
-        <SettingRow icon={HelpCircle} label="Help Center" onPress={() => {}} />
+        <SectionHeader title="Library Support" />
         <SettingRow
-          icon={MessageSquare}
-          label="Send Feedback"
+          icon={HelpCircle}
+          label="Wisdom Center"
           onPress={() => {}}
         />
-        <SettingRow icon={Info} label="About Afterpath" onPress={() => {}} />
+        <SettingRow
+          icon={MessageSquare}
+          label="Send Messenger"
+          onPress={() => {}}
+        />
+        <SettingRow
+          icon={Info}
+          label="About the Chronicle"
+          onPress={() => {}}
+        />
 
         <View style={styles.spacer} />
 
         <SettingRow
           icon={LogOut}
-          label="Log Out"
+          label="Depart Journey"
           onPress={handleLogout}
           isDestructive
         />
@@ -164,10 +184,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7F5EF", // Cream background
+    backgroundColor: "#F7F7F2",
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingBottom: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -178,40 +198,55 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "300",
     color: "#2D3748",
-    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    letterSpacing: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingBottom: 20,
   },
   sectionHeader: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2D3748",
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#718096",
     marginBottom: 16,
-    marginTop: 8,
-    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    marginTop: 12,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  rowContainer: {
+    marginBottom: 12,
+    borderRadius: 24,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  rowParchment: {
+    borderRadius: 24,
+  },
+  parchmentImage: {
+    borderRadius: 24,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E9EFEC", // Sage green light background
-    borderRadius: 30,
     padding: 12,
     paddingHorizontal: 16,
-    marginBottom: 12,
   },
   iconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#C5D0C6", // Darker sage for icon bg
+    backgroundColor: "rgba(47, 79, 79, 0.1)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
   },
   rowContent: {
     flex: 1,
@@ -224,6 +259,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    fontWeight: "500",
   },
   value: {
     fontSize: 16,
@@ -232,9 +268,9 @@ const styles = StyleSheet.create({
   },
   destructiveText: {
     color: "#B55D5D",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   spacer: {
-    height: 24,
+    height: 16,
   },
 });

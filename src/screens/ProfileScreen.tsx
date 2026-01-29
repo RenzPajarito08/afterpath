@@ -1,17 +1,19 @@
 import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
+  Activity,
   Calendar,
   Clock,
   Compass,
-  Map,
+  Map as MapIcon,
   Settings,
-  Waves,
+  Zap,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   Platform,
   ScrollView,
   StyleSheet,
@@ -30,15 +32,23 @@ type NavigationProp = NativeStackNavigationProp<
 >;
 
 const StatRow = ({ icon: Icon, label, value, subtext }: any) => (
-  <View style={styles.statRow}>
-    <View style={styles.statIconContainer}>
-      <Icon size={22} color="#4A5D4E" />
-    </View>
-    <View style={styles.statInfo}>
-      <Text style={styles.statLabel}>{label}</Text>
-      {subtext && <Text style={styles.statSubtext}>{subtext}</Text>}
-    </View>
-    <Text style={styles.statValue}>{value}</Text>
+  <View style={styles.statContainer}>
+    <ImageBackground
+      source={require("../assets/parchment_texture.png")}
+      style={styles.statParchment}
+      imageStyle={styles.parchmentImage}
+    >
+      <View style={styles.statContent}>
+        <View style={styles.statIconContainer}>
+          <Icon size={20} color="#2F4F4F" />
+        </View>
+        <View style={styles.statInfo}>
+          <Text style={styles.statLabel}>{label}</Text>
+          {subtext && <Text style={styles.statSubtext}>{subtext}</Text>}
+        </View>
+        <Text style={styles.statValue}>{value}</Text>
+      </View>
+    </ImageBackground>
   </View>
 );
 
@@ -49,7 +59,6 @@ export default function ProfileScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Profile Display State (The "Saved" data)
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -89,9 +98,13 @@ export default function ProfileScreen() {
 
   if (loading && !firstName) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#A8BFA5" />
-      </View>
+      <ImageBackground
+        source={require("../assets/parchment_texture.png")}
+        style={styles.centerContainer}
+      >
+        <ActivityIndicator size="large" color="#2F4F4F" />
+        <Text style={styles.loadingText}>Reading your chronicle...</Text>
+      </ImageBackground>
     );
   }
 
@@ -102,83 +115,72 @@ export default function ProfileScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 20,
             paddingBottom: Math.max(insets.bottom, 24),
           },
         ]}
+        bounces={false}
       >
-        <View style={styles.header}>
-          <View style={styles.identityWrapper}>
-            <View style={styles.avatarContainer}>
-              <Image
-                source={{
-                  uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`,
-                }}
-                style={styles.avatar}
-              />
-            </View>
-            <View style={styles.identityInfo}>
-              <Text
-                style={styles.fullName}
-                numberOfLines={1}
-                ellipsizeMode="tail"
+        <ImageBackground
+          source={require("../assets/fantasy_header.png")}
+          style={[styles.headerBg, { paddingTop: insets.top + 20 }]}
+          resizeMode="cover"
+        >
+          <View style={styles.headerOverlay}>
+            <View style={styles.headerTop}>
+              <Text style={styles.headerTitle}>Adventurer's Card</Text>
+              <TouchableOpacity
+                style={styles.settingsButton}
+                onPress={() => navigation.navigate("Settings")}
               >
-                {firstName || lastName
-                  ? `${firstName} ${lastName}`
-                  : username || user?.email}
-              </Text>
-              <Text
-                style={styles.emailText}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {user?.email}
-              </Text>
+                <Settings size={28} color="#F7F7F2" />
+              </TouchableOpacity>
             </View>
+
+            <ImageBackground
+              source={require("../assets/parchment_texture.png")}
+              style={styles.identityCard}
+              imageStyle={styles.parchmentImage}
+            >
+              <View style={styles.identityWrapper}>
+                <View style={styles.avatarContainer}>
+                  <Image
+                    source={{
+                      uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`,
+                    }}
+                    style={styles.avatar}
+                  />
+                </View>
+                <View style={styles.identityInfo}>
+                  <Text style={styles.fullName} numberOfLines={1}>
+                    {firstName || lastName
+                      ? `${firstName} ${lastName}`
+                      : username || user?.email}
+                  </Text>
+                  <Text style={styles.rankText}>Master Wayfarer</Text>
+                </View>
+              </View>
+            </ImageBackground>
           </View>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <Settings size={28} color="#2D3748" opacity={0.7} />
-          </TouchableOpacity>
-        </View>
+        </ImageBackground>
 
         <View style={styles.contentContainer}>
-          {/* Your Journey Card with Background Image */}
-          <View style={styles.journeyCard}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&q=80&w=800",
-              }}
-              style={styles.journeyImage}
-            />
-            <View style={styles.journeyOverlay}>
-              <Text style={styles.journeyTitle}>Your Journey</Text>
-            </View>
-          </View>
-
-          {/* Linear Stats List */}
+          <Text style={styles.sectionTitle}>Journey Statistics</Text>
           <View style={styles.statsList}>
             <StatRow
               icon={Compass}
               label="Total Distance"
               value="1,420 km"
-              subtext="Equivalent to walking across Japan"
+              subtext="Equivalent to crossing many borders"
             />
-            <StatRow icon={Map} label="Journeys" value="84" />
-            <StatRow icon={Clock} label="Time Moving" value="120 Hrs" />
-            <StatRow icon={Waves} label="Top Speed" value="12 km/h" />
-            <StatRow
-              icon={Waves} // Using Waves for rhythm/avg as it looks like the icon in image
-              label="Avg. Rhythm"
-              value="6 km/h"
-            />
+            <StatRow icon={MapIcon} label="Quests Completed" value="84" />
+            <StatRow icon={Clock} label="Time in Motion" value="120 Hrs" />
+            <StatRow icon={Zap} label="Highest Pace" value="12 km/h" />
+            <StatRow icon={Activity} label="Average Rhythm" value="6 km/h" />
             <StatRow
               icon={Calendar}
-              label="On this day"
-              value="" // Value empty to show subtext properly if needed or handled inside
-              subtext="July 8, 2024. Morning Walk in Manila"
+              label="Chronicle Status"
+              value="Active"
+              subtext="Tracing paths since 2024"
             />
           </View>
         </View>
@@ -190,41 +192,71 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F7F5EF", // Creamy background
+    backgroundColor: "#F7F7F2",
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F7F5EF",
   },
-  header: {
+  loadingText: {
+    marginTop: 16,
+    color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
+  },
+  headerBg: {
+    height: 300,
+    width: "100%",
+  },
+  headerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    padding: 24,
+    justifyContent: "space-between",
+  },
+  headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 30,
+  },
+  headerTitle: {
+    fontSize: 24,
+    color: "#F7F7F2",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  settingsButton: {
+    padding: 4,
+  },
+  identityCard: {
+    marginBottom: -60,
+    borderRadius: 24,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  parchmentImage: {
+    borderRadius: 24,
   },
   identityWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    flex: 1,
-    marginRight: 12,
+    padding: 20,
+    gap: 20,
   },
   avatarContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
     backgroundColor: "#FFF",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderWidth: 2,
+    borderColor: "#2F4F4F",
     overflow: "hidden",
   },
   avatar: {
@@ -233,68 +265,58 @@ const styles = StyleSheet.create({
   },
   identityInfo: {
     flex: 1,
-    justifyContent: "center",
   },
   fullName: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "600",
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
-  emailText: {
+  rankText: {
     fontSize: 14,
-    color: "#718096",
-    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
-  },
-  settingsButton: {
-    padding: 8,
+    color: "#2F4F4F",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
+    marginTop: 4,
+    letterSpacing: 1,
   },
   contentContainer: {
-    gap: 20,
+    padding: 24,
+    paddingTop: 80,
   },
-  journeyCard: {
-    height: 220,
-    backgroundColor: "#E9EFEC",
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#718096",
+    marginBottom: 20,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  statsList: {
+    gap: 16,
+  },
+  statContainer: {
     borderRadius: 24,
-    overflow: "hidden",
-    elevation: 3,
+    elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 4,
   },
-  journeyImage: {
-    width: "100%",
-    height: "100%",
-    opacity: 0.9,
+  statParchment: {
+    borderRadius: 24,
   },
-  journeyOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    padding: 24,
-  },
-  journeyTitle: {
-    color: "#2D3748",
-    fontSize: 20,
-    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
-    fontWeight: "300",
-  },
-  statsList: {
-    gap: 12,
-  },
-  statRow: {
+  statContent: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E9EFEC", // Sage green light background
-    borderRadius: 30,
-    padding: 12,
-    paddingHorizontal: 16,
-    gap: 12,
+    padding: 16,
+    gap: 16,
   },
   statIconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#C5D0C6", // Darker sage for icon bg
+    backgroundColor: "rgba(47, 79, 79, 0.1)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -305,16 +327,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    fontWeight: "500",
   },
   statSubtext: {
     fontSize: 12,
     color: "#718096",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    marginTop: 2,
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2D3748",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2F4F4F",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
 });
