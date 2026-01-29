@@ -287,26 +287,25 @@ export default function TrackingScreen({ navigation, route }: Props) {
         </ImageBackground>
 
         <View style={styles.controls}>
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              isTracking ? styles.pauseActive : styles.playActive,
-            ]}
-            onPress={togglePause}
-          >
-            {isTracking ? (
-              <Pause size={32} color="#F7F7F2" />
-            ) : (
-              <Play size={32} color="#F7F7F2" />
-            )}
+          <TouchableOpacity onPress={togglePause} activeOpacity={0.8}>
+            <ImageBackground
+              source={require("../assets/parchment_texture.png")}
+              style={[styles.sealButton, styles.playPauseSeal]}
+              imageStyle={styles.sealParchment}
+            >
+              {isTracking ? (
+                <Pause size={32} color="#2F4F4F" />
+              ) : (
+                <Play size={32} color="#2F4F4F" />
+              )}
+            </ImageBackground>
           </TouchableOpacity>
 
           {!isTracking && duration > 0 && (
-            <TouchableOpacity
-              style={[styles.controlButton, styles.stopButton]}
-              onPress={handleEndJourney}
-            >
-              <Square size={28} color="#F7F7F2" />
+            <TouchableOpacity onPress={handleEndJourney} activeOpacity={0.8}>
+              <View style={[styles.sealButton, styles.stopSeal]}>
+                <Square size={28} color="#F7F7F2" />
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -380,12 +379,13 @@ const styles = StyleSheet.create({
   },
   controls: {
     flexDirection: "row",
-    gap: 24,
+    gap: 32,
+    alignItems: "center",
   },
-  controlButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  sealButton: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     alignItems: "center",
     justifyContent: "center",
     elevation: 8,
@@ -393,14 +393,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
+    borderWidth: 3,
   },
-  playActive: {
-    backgroundColor: "#2D3748",
+  sealParchment: {
+    borderRadius: 42,
   },
-  pauseActive: {
-    backgroundColor: "#718096",
+  playPauseSeal: {
+    borderColor: "#8B7355", // Bronze/Gold border
   },
-  stopButton: {
-    backgroundColor: "#2F4F4F",
+  stopSeal: {
+    backgroundColor: "#2F4F4F", // Forest Green
+    borderColor: "rgba(255,255,255,0.2)",
   },
 });

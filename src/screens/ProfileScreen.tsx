@@ -122,10 +122,10 @@ export default function ProfileScreen() {
       >
         <ImageBackground
           source={require("../assets/fantasy_header.png")}
-          style={[styles.headerBg, { paddingTop: insets.top + 20 }]}
+          style={styles.headerBg}
           resizeMode="cover"
         >
-          <View style={styles.headerOverlay}>
+          <View style={[styles.headerOverlay, { paddingTop: insets.top + 20 }]}>
             <View style={styles.headerTop}>
               <Text style={styles.headerTitle}>Adventurer's Card</Text>
               <TouchableOpacity
@@ -156,7 +156,7 @@ export default function ProfileScreen() {
                       ? `${firstName} ${lastName}`
                       : username || user?.email}
                   </Text>
-                  <Text style={styles.rankText}>Master Wayfarer</Text>
+                  <Text style={styles.rankText}>@{username || "Wayfarer"}</Text>
                 </View>
               </View>
             </ImageBackground>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
   headerBg: {
-    height: 300,
+    height: 240,
     width: "100%",
   },
   headerOverlay: {
