@@ -7,6 +7,7 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -28,53 +29,126 @@ interface Props {
 
 export default function WelcomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
-  async function signInWithEmail() {
+  async function signIn() {
+    const trimmedInput = emailOrUsername.trim();
+    if (!trimmedInput || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
     setLoading(true);
+    let loginEmail = trimmedInput;
+
+    // Resolve username to email if it doesn't look like an email
+    if (!trimmedInput.includes("@")) {
+      try {
+        const { data, error: rpcError } = await supabase.rpc(
+          "get_email_by_username",
+          {
+            lookup_username: trimmedInput,
+          },
+        );
+
+        if (rpcError) throw rpcError;
+        if (!data) {
+          Alert.alert("Error", "Username not found");
+          setLoading(false);
+          return;
+        }
+        loginEmail = data;
+      } catch (err: any) {
+        Alert.alert("Error", "Failed to resolve username");
+        setLoading(false);
+        return;
+      }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email: email,
+      email: loginEmail,
       password: password,
     });
 
-    if (error) Alert.alert(error.message);
+    if (error) Alert.alert("Login Failed", error.message);
     setLoading(false);
   }
 
-  async function signUpWithEmail() {
+  async function signUp() {
+    const trimmedUsername = username.trim();
+    const trimmedEmail = emailOrUsername.trim();
+
+    if (!trimmedUsername || !trimmedEmail || !password || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (trimmedUsername.length < 3) {
+      Alert.alert("Error", "Username must be at least 3 characters");
+      return;
+    }
+
     setLoading(true);
+
+    // Check if username is already taken
+    try {
+      const { data: existingUser, error: checkError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("username", trimmedUsername)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+      if (existingUser) {
+        Alert.alert(
+          "Error",
+          "This username is already claimed by another seeker.",
+        );
+        setLoading(false);
+        return;
+      }
+    } catch (err: any) {
+      console.error("Username check failed", err);
+      // We continue anyway, but the pre-check is better UX
+    }
+
     const {
       data: { session },
       error,
     } = await supabase.auth.signUp({
-      email: email,
+      email: trimmedEmail,
       password: password,
+      options: {
+        data: {
+          username: trimmedUsername,
+        },
+      },
     });
 
     if (error) {
-      Alert.alert(error.message);
+      Alert.alert("Signup Failed", error.message);
       setLoading(false);
       return;
     }
 
     if (session?.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({ id: session.user.id, username: email });
-
-      if (profileError) {
-        console.error("Profile creation failed", profileError);
-      } else {
-        Alert.alert(
-          "Success",
-          "Please check your inbox for email verification!",
-        );
-      }
+      // Profile is handled by the SQL trigger, but we check if we need to do anything here
+      Alert.alert(
+        "Success",
+        "Welcome to the fellowship! Please verify your email.",
+      );
     } else {
-      Alert.alert("Please check your inbox for email verification!");
+      Alert.alert("Success", "Please check your inbox for email verification!");
     }
 
     setLoading(false);
@@ -87,89 +161,136 @@ export default function WelcomeScreen({ navigation }: Props) {
       resizeMode="cover"
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardView}
       >
-        <View
-          style={[
-            styles.overlay,
-            { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 },
-          ]}
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Afterpath</Text>
-            <Text style={styles.subtitle}>Beyond the Journey</Text>
-            <View style={styles.divider} />
-            <Text style={styles.quote}>
-              "The journey is the reward for those who seek memories."
-            </Text>
-          </View>
-
-          <ImageBackground
-            source={require("../assets/parchment_texture.png")}
-            style={styles.parchmentContainer}
-            imageStyle={styles.parchmentImage}
+          <View
+            style={[
+              styles.overlay,
+              {
+                paddingTop: insets.top + 40,
+                paddingBottom: insets.bottom + 20,
+              },
+            ]}
           >
-            <View style={styles.inputSection}>
-              <View style={styles.inputWrapper}>
-                <Mail size={20} color="#718096" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Sanctuary Email"
-                  placeholderTextColor="#A0AEC0"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <Lock size={20} color="#718096" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Secret Phrase"
-                  placeholderTextColor="#A0AEC0"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={isLogin ? signInWithEmail : signUpWithEmail}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#F7F7F2" />
-                ) : (
-                  <>
-                    {isLogin ? (
-                      <LogIn size={20} color="#F7F7F2" />
-                    ) : (
-                      <UserPlus size={20} color="#F7F7F2" />
-                    )}
-                    <Text style={styles.primaryButtonText}>
-                      {isLogin ? "Begin Journey" : "Join Fellowship"}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Afterpath</Text>
+              <Text style={styles.subtitle}>Beyond the Journey</Text>
+              <View style={styles.divider} />
+              <Text style={styles.quote}>
+                "The journey is the reward for those who seek memories."
+              </Text>
             </View>
-          </ImageBackground>
 
-          <TouchableOpacity
-            onPress={() => setIsLogin(!isLogin)}
-            style={styles.switchButton}
-          >
-            <Text style={styles.switchText}>
-              {isLogin
-                ? "Seek a new fate? Sign Up"
-                : "Retrace your steps? Sign In"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <ImageBackground
+              source={require("../assets/parchment_texture.png")}
+              style={styles.parchmentContainer}
+              imageStyle={styles.parchmentImage}
+            >
+              <View style={styles.inputSection}>
+                {!isLogin && (
+                  <View style={styles.inputWrapper}>
+                    <UserPlus
+                      size={20}
+                      color="#718096"
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Chosen Username"
+                      placeholderTextColor="#A0AEC0"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                    />
+                  </View>
+                )}
+
+                <View style={styles.inputWrapper}>
+                  <Mail size={20} color="#718096" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder={
+                      isLogin ? "Email or Username" : "Sanctuary Email"
+                    }
+                    placeholderTextColor="#A0AEC0"
+                    value={emailOrUsername}
+                    onChangeText={setEmailOrUsername}
+                    autoCapitalize="none"
+                    keyboardType={isLogin ? "default" : "email-address"}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <Lock size={20} color="#718096" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder={
+                      isLogin ? "Secret Phrase" : "New Secret Phrase"
+                    }
+                    placeholderTextColor="#A0AEC0"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                {!isLogin && (
+                  <View style={styles.inputWrapper}>
+                    <Lock size={20} color="#718096" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Confirm Secret Phrase"
+                      placeholderTextColor="#A0AEC0"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={styles.primaryButton}
+                  onPress={isLogin ? signIn : signUp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#F7F7F2" />
+                  ) : (
+                    <>
+                      {isLogin ? (
+                        <LogIn size={20} color="#F7F7F2" />
+                      ) : (
+                        <UserPlus size={20} color="#F7F7F2" />
+                      )}
+                      <Text style={styles.primaryButtonText}>
+                        {isLogin ? "Begin Journey" : "Join Fellowship"}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ImageBackground>
+
+            <TouchableOpacity
+              onPress={() => setIsLogin(!isLogin)}
+              style={styles.switchButton}
+            >
+              <Text style={styles.switchText}>
+                {isLogin
+                  ? "Seek a new fate? Sign Up"
+                  : "Retrace your steps? Sign In"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ImageBackground>
   );
