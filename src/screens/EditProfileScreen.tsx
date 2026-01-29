@@ -35,6 +35,26 @@ export default function EditProfileScreen() {
   const [editLastName, setEditLastName] = useState("");
   const [editBirthday, setEditBirthday] = useState("");
 
+  const handleBirthdayChange = (text: string) => {
+    // Remove any non-numeric characters
+    const numeric = text.replace(/[^0-9]/g, "");
+
+    let formatted = "";
+    if (numeric.length > 0) {
+      // YYYY
+      formatted = numeric.substring(0, 4);
+      if (numeric.length > 4) {
+        // YYYY-MM
+        formatted += "-" + numeric.substring(4, 6);
+        if (numeric.length > 6) {
+          // YYYY-MM-DD
+          formatted += "-" + numeric.substring(6, 8);
+        }
+      }
+    }
+    setEditBirthday(formatted);
+  };
+
   useEffect(() => {
     if (user) {
       getProfile();
@@ -162,8 +182,10 @@ export default function EditProfileScreen() {
             <TextInput
               style={styles.input}
               value={editBirthday}
-              onChangeText={setEditBirthday}
+              onChangeText={handleBirthdayChange}
               placeholder="YYYY-MM-DD"
+              keyboardType="numeric"
+              maxLength={10}
             />
           </View>
 
