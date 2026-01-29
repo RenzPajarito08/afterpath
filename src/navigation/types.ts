@@ -14,4 +14,6 @@ export type RootStackParamList = {
   JourneyDetail: { journeyId: string };
   TimelineTab: undefined;
   ProfileTab: undefined;
+  Settings: undefined;
+  EditProfile: undefined;
 };
