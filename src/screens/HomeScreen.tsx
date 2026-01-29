@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { RootStackParamList } from "../navigation/types";
@@ -33,6 +34,7 @@ interface Journey {
 }
 
 export default function HomeScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [stats, setStats] = useState({ totalDistance: 0, totalJourneys: 0 });
   const [recentJourneys, setRecentJourneys] = useState<Journey[]>([]);
@@ -95,7 +97,13 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[
+        styles.contentContainer,
+        {
+          paddingTop: Math.max(insets.top, 24),
+          paddingBottom: Math.max(insets.bottom, 24),
+        },
+      ]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -187,7 +195,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 24,
-    paddingTop: 60,
   },
   header: {
     marginBottom: 32,

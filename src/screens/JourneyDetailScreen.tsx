@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { RootStackParamList } from "../navigation/types";
 
@@ -30,6 +31,7 @@ interface Journey {
 }
 
 export default function JourneyDetailScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
   const { journeyId } = route.params;
   const [journey, setJourney] = useState<Journey | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +110,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
         </MapView>
 
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { top: Math.max(insets.top, 10) }]}
           onPress={() => navigation.goBack()}
         >
           <ArrowLeft color="#2D3748" size={24} />
@@ -143,7 +145,12 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
           "{journey.memory_text || "No words written."}"
         </Text>
 
-        <View style={styles.reflectionPrompt}>
+        <View
+          style={[
+            styles.reflectionPrompt,
+            { marginBottom: Math.max(insets.bottom, 16) },
+          ]}
+        >
           <Text style={styles.promptText}>
             You walked this path {format(new Date(journey.start_time), "PP")}.
           </Text>
@@ -173,7 +180,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 50,
     left: 20,
     backgroundColor: "rgba(255,255,255,0.8)",
     padding: 8,

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { RootStackParamList } from "../navigation/types";
 
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function WelcomeScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -77,7 +79,12 @@ export default function WelcomeScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
+    >
       <View style={styles.content}>
         <Text style={styles.quote}>"Every journey leaves a memory."</Text>
 
