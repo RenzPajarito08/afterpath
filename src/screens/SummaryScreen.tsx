@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     height: 180,
-    fontSize: 18,
+    fontSize: 16,
     borderColor: "rgba(0,0,0,0.1)",
     borderWidth: 1,
     marginBottom: 24,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "#F7F7F2",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
