@@ -3,6 +3,7 @@ import * as Location from "expo-location";
 import { Pause, Play, Square } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   DeviceEventEmitter,
   ImageBackground,
@@ -22,7 +23,7 @@ import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Tracking">;
 
-interface Coordinate {
+export interface Coordinate {
   latitude: number;
   longitude: number;
   timestamp: number;
@@ -61,6 +62,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
     useState<Location.LocationObject | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [accumulatedDuration, setAccumulatedDuration] = useState(0); // in seconds
+  const [isSaving, setIsSaving] = useState(false);
 
   const mapRef = useRef<MapView>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(
@@ -95,7 +97,9 @@ export default function TrackingScreen({ navigation, route }: Props) {
     const subscription = DeviceEventEmitter.addListener(
       LOCATION_UPDATED_EVENT,
       (locations: Location.LocationObject[]) => {
-        locations.forEach((location) => handleNewLocation(location));
+        locations.forEach((location, index) =>
+          handleNewLocation(location, index === locations.length - 1),
+        );
       },
     );
 
@@ -153,7 +157,26 @@ export default function TrackingScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleNewLocation = (newLocation: Location.LocationObject) => {
+  const MIN_DISTANCE_THRESHOLD = 10; // meters
+  const MIN_ACCURACY_THRESHOLD = 15; // meters (Tightened from 25m)
+  const MAX_SPEED_THRESHOLD = 35; // meters per second (~126 km/h)
+
+  const handleNewLocation = (
+    newLocation: Location.LocationObject,
+    shouldAnimate = true,
+  ) => {
+    // 1. Filter out points with poor accuracy
+    if (
+      newLocation.coords.accuracy &&
+      newLocation.coords.accuracy > MIN_ACCURACY_THRESHOLD
+    ) {
+      console.log(
+        "Ignored point due to poor accuracy:",
+        newLocation.coords.accuracy,
+      );
+      return;
+    }
+
     const { latitude, longitude } = newLocation.coords;
     const newCoord: Coordinate = {
       latitude,
@@ -166,25 +189,47 @@ export default function TrackingScreen({ navigation, route }: Props) {
     setRouteCoordinates((prevCoords) => {
       const lastCoord = prevCoords[prevCoords.length - 1];
       if (lastCoord) {
+        // 2. Filter out duplicate timestamps or identical coordinates
+        // Removed timestamp check to avoid saving same GPS point just because time advanced
         if (
           lastCoord.latitude === newCoord.latitude &&
-          lastCoord.longitude === newCoord.longitude &&
-          lastCoord.timestamp === newCoord.timestamp
+          lastCoord.longitude === newCoord.longitude
         ) {
           return prevCoords;
         }
+
+        // 3. Calculate distance and time delta
         const dist = getDistance(lastCoord, newCoord);
+        const timeDelta = (newCoord.timestamp - lastCoord.timestamp) / 1000; // seconds
+
+        // 4. Filter out small movements (drift)
+        if (dist < MIN_DISTANCE_THRESHOLD) {
+          console.log("Ignored point due to small distance:", dist);
+          return prevCoords;
+        }
+
+        // 5. Speed Filter: Ignore impossible jumps
+        if (timeDelta > 0) {
+          const speed = dist / timeDelta;
+          if (speed > MAX_SPEED_THRESHOLD) {
+            console.log("Ignored point due to impossible speed:", speed, "m/s");
+            return prevCoords;
+          }
+        }
+
         setDistance((d) => d + dist);
       }
       return [...prevCoords, newCoord];
     });
 
-    mapRef.current?.animateToRegion({
-      latitude,
-      longitude,
-      latitudeDelta: 0.005,
-      longitudeDelta: 0.005,
-    });
+    if (shouldAnimate) {
+      mapRef.current?.animateToRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    }
   };
 
   const stopTracking = async () => {
@@ -207,21 +252,67 @@ export default function TrackingScreen({ navigation, route }: Props) {
     }
   };
 
-  const handleEndJourney = () => {
+  const handleEndJourney = async () => {
     stopTracking();
+
+    // Preliminary check to see if we have enough points to snap
+    // user might cancel, so we don't snap yet.
+
     Alert.alert(
       "Chronicle Complete",
       `Your path covered ${(distance / 1000).toFixed(2)} km over ${formatDuration(duration)}.`,
       [
         {
           text: "Enscribe Memory",
-          onPress: () =>
-            navigation.navigate("Summary", {
-              distance,
-              duration,
-              coordinates: routeCoordinates,
-              activityType: activityType,
-            }),
+          onPress: async () => {
+            setIsSaving(true);
+            try {
+              let finalCoordinates = routeCoordinates;
+
+              // Attempt to snap to roads if API key is present
+              // We can show a small loading indicator if this takes time,
+              // but for now we'll do it optimistically or block slightly.
+              // Ideally this should be a proper async loading state in UI.
+              try {
+                // Only snap if we have significant movement to avoid API waste on empty tests
+                if (routeCoordinates.length > 5) {
+                  const { snapToRoads } =
+                    await import("../lib/locationServices");
+                  const snapped = await snapToRoads(routeCoordinates);
+                  if (snapped.length > 0) {
+                    finalCoordinates = snapped;
+                  }
+                }
+              } catch (e) {
+                console.log("Failed to snap path: ", e);
+              }
+
+              // Recalculate distance if we have a new path (snapped)
+              // Even if we didn't snap, we can maintain the original distance or recalc it.
+              // But if we snapped, we MUST recalc to match the new visual path.
+              let finalDistance = distance;
+              if (finalCoordinates !== routeCoordinates) {
+                finalDistance = 0;
+                for (let i = 0; i < finalCoordinates.length - 1; i++) {
+                  finalDistance += getDistance(
+                    finalCoordinates[i],
+                    finalCoordinates[i + 1],
+                  );
+                }
+              }
+
+              navigation.navigate("Summary", {
+                distance: finalDistance,
+                duration,
+                coordinates: finalCoordinates,
+                activityType: activityType,
+              });
+            } catch (e) {
+              console.log("Failed to end journey: ", e);
+            } finally {
+              setIsSaving(false);
+            }
+          },
         },
       ],
     );
@@ -310,6 +401,12 @@ export default function TrackingScreen({ navigation, route }: Props) {
           )}
         </View>
       </View>
+      {isSaving && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2F4F4F" />
+          <Text style={styles.loadingText}>Annotating Map...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -404,5 +501,18 @@ const styles = StyleSheet.create({
   stopSeal: {
     backgroundColor: "#2F4F4F", // Forest Green
     borderColor: "rgba(255,255,255,0.2)",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(247, 247, 242, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: "#2F4F4F",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+    fontSize: 16,
   },
 });
