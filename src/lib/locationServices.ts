@@ -1,5 +1,5 @@
 import { Alert } from "react-native";
-import { Coordinate } from "../screens/TrackingScreen";
+import { Coordinate } from "../hooks/useJourneyTracker";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
