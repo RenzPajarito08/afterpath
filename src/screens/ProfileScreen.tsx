@@ -15,6 +15,7 @@ import {
   Image,
   ImageBackground,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -54,7 +55,16 @@ const StatRow = ({ icon: Icon, label, value, subtext }: any) => (
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { user, loading, firstName, lastName, username } = useProfileLogic();
+  const {
+    user,
+    loading,
+    firstName,
+    lastName,
+    username,
+    stats,
+    refreshing,
+    onRefresh,
+  } = useProfileLogic();
 
   if (loading && !firstName) {
     return (
@@ -79,6 +89,9 @@ export default function ProfileScreen() {
           },
         ]}
         bounces={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <ImageBackground
           source={require("../../assets/fantasy_header.png")}
@@ -129,18 +142,34 @@ export default function ProfileScreen() {
             <StatRow
               icon={Compass}
               label="Total Distance"
-              value="1,420 km"
+              value={stats.totalDistance}
               subtext="Equivalent to crossing many borders"
             />
-            <StatRow icon={MapIcon} label="Quests Completed" value="84" />
-            <StatRow icon={Clock} label="Time in Motion" value="120 Hrs" />
-            <StatRow icon={Zap} label="Highest Pace" value="12 km/h" />
-            <StatRow icon={Activity} label="Average Rhythm" value="6 km/h" />
+            <StatRow
+              icon={MapIcon}
+              label="Quests Completed"
+              value={stats.questsCompleted}
+            />
+            <StatRow
+              icon={Clock}
+              label="Time in Motion"
+              value={stats.timeInMotion}
+            />
+            <StatRow
+              icon={Zap}
+              label="Highest Pace"
+              value={stats.highestPace}
+            />
+            <StatRow
+              icon={Activity}
+              label="Average Rhythm"
+              value={stats.avgRhythm}
+            />
             <StatRow
               icon={Calendar}
               label="Chronicle Status"
               value="Active"
-              subtext="Tracing paths since 2024"
+              subtext={`Tracing paths since ${stats.activeSince || "2026"}`}
             />
           </View>
         </View>
