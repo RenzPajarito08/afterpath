@@ -1,9 +1,8 @@
 import { useNavigation } from "@react-navigation/native";
 import { ChevronLeft, Save } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
-  Alert,
   ImageBackground,
   Platform,
   StyleSheet,
@@ -14,109 +13,22 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
+import { useEditProfileLogic } from "../hooks/useEditProfileLogic";
 
 export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
-  const [birthday, setBirthday] = useState("");
-
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [editBirthday, setEditBirthday] = useState("");
-
-  const handleBirthdayChange = (text: string) => {
-    const numeric = text.replace(/[^0-9]/g, "");
-    let formatted = "";
-    if (numeric.length > 0) {
-      formatted = numeric.substring(0, 4);
-      if (numeric.length > 4) {
-        formatted += "-" + numeric.substring(4, 6);
-        if (numeric.length > 6) {
-          formatted += "-" + numeric.substring(6, 8);
-        }
-      }
-    }
-    setEditBirthday(formatted);
-  };
-
-  useEffect(() => {
-    if (user) {
-      getProfile();
-    }
-  }, [user]);
-
-  const getProfile = async () => {
-    try {
-      setLoading(true);
-      if (!user) throw new Error("No user on the session!");
-
-      const { data, error, status } = await supabase
-        .from("profiles")
-        .select(`username, first_name, last_name, birthday`)
-        .eq("id", user.id)
-        .single();
-
-      if (error && status !== 406) {
-        throw error;
-      }
-
-      if (data) {
-        const fn = data.first_name || "";
-        const ln = data.last_name || "";
-        const b = data.birthday || "";
-
-        setUsername(data.username || "");
-        setFirstName(fn);
-        setLastName(ln);
-        setBirthday(b);
-
-        setEditFirstName(fn);
-        setEditLastName(ln);
-        setEditBirthday(b);
-      }
-    } catch (error: any) {
-      console.log("Error loading profile", error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateProfile = async () => {
-    try {
-      setSaving(true);
-      if (!user) throw new Error("No user on the session!");
-
-      const updates = {
-        id: user.id,
-        first_name: editFirstName,
-        last_name: editLastName,
-        birthday: editBirthday || null,
-        updated_at: new Date(),
-      };
-
-      const { error } = await supabase.from("profiles").upsert(updates);
-
-      if (error) {
-        throw error;
-      }
-
-      Alert.alert("Success", "Chronicle details updated.");
-      navigation.goBack();
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const {
+    loading,
+    saving,
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    birthday,
+    handleBirthdayChange,
+    updateProfile,
+  } = useEditProfileLogic();
 
   if (loading) {
     return (
@@ -156,8 +68,8 @@ export default function EditProfileScreen() {
             <Text style={styles.label}>True Name</Text>
             <TextInput
               style={styles.input}
-              value={editFirstName}
-              onChangeText={setEditFirstName}
+              value={firstName}
+              onChangeText={setFirstName}
               placeholder="Enscribed at birth"
               maxLength={25}
               placeholderTextColor="#A0AEC0"
@@ -169,8 +81,8 @@ export default function EditProfileScreen() {
             <Text style={styles.label}>Lineage</Text>
             <TextInput
               style={styles.input}
-              value={editLastName}
-              onChangeText={setEditLastName}
+              value={lastName}
+              onChangeText={setLastName}
               placeholder="Family descent"
               maxLength={25}
               placeholderTextColor="#A0AEC0"
@@ -182,7 +94,7 @@ export default function EditProfileScreen() {
             <Text style={styles.label}>Day of Dawning (Birthday)</Text>
             <TextInput
               style={styles.input}
-              value={editBirthday}
+              value={birthday}
               onChangeText={handleBirthdayChange}
               placeholder="YYYY-MM-DD"
               keyboardType="numeric"
