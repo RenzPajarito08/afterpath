@@ -1,4 +1,4 @@
-import { useIsFocused, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   Activity,
@@ -9,7 +9,7 @@ import {
   Settings,
   Zap,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Image,
@@ -22,8 +22,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
+import { useProfileLogic } from "../hooks/useProfileLogic";
 import { RootStackParamList } from "../navigation/types";
 
 type NavigationProp = NativeStackNavigationProp<
@@ -55,46 +54,7 @@ const StatRow = ({ icon: Icon, label, value, subtext }: any) => (
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const isFocused = useIsFocused();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
-
-  useEffect(() => {
-    if (user && isFocused) {
-      getProfile();
-    }
-  }, [user, isFocused]);
-
-  const getProfile = async () => {
-    try {
-      setLoading(true);
-      if (!user) throw new Error("No user on the session!");
-
-      const { data, error, status } = await supabase
-        .from("profiles")
-        .select(`username, first_name, last_name`)
-        .eq("id", user.id)
-        .single();
-
-      if (error && status !== 406) {
-        throw error;
-      }
-
-      if (data) {
-        setFirstName(data.first_name || "");
-        setLastName(data.last_name || "");
-        setUsername(data.username || "");
-      }
-    } catch (error: any) {
-      console.log("Error loading profile", error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user, loading, firstName, lastName, username } = useProfileLogic();
 
   if (loading && !firstName) {
     return (
