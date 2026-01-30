@@ -1,7 +1,7 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronRight, Clock, Footprints, MapPin } from "lucide-react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   ImageBackground,
   Platform,
@@ -13,8 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
+import { useHomeLogic } from "../hooks/useHomeLogic";
 import { RootStackParamList } from "../navigation/types";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -26,80 +25,17 @@ interface Props {
   navigation: HomeScreenNavigationProp;
 }
 
-interface Journey {
-  id: string;
-  title: string;
-  distance_meters: number;
-  duration_seconds: number;
-  created_at: string;
-  start_time: string;
-}
-
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const [stats, setStats] = useState({ totalDistance: 0, totalJourneys: 0 });
-  const [recentJourneys, setRecentJourneys] = useState<Journey[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    if (!user) return;
-
-    const { data: journeys, error } = await supabase
-      .from("journeys")
-      .select("distance_meters")
-      .eq("user_id", user.id);
-
-    if (!error && journeys) {
-      const totalDist = journeys.reduce(
-        (acc, curr) => acc + (curr.distance_meters || 0),
-        0,
-      );
-      setStats({
-        totalDistance: totalDist,
-        totalJourneys: journeys.length,
-      });
-    }
-
-    const { data: recent, error: recentError } = await supabase
-      .from("journeys")
-      .select(
-        "id, title, distance_meters, duration_seconds, created_at, start_time",
-      )
-      .eq("user_id", user.id)
-      .order("start_time", { ascending: false })
-      .limit(3);
-
-    if (!recentError && recent) {
-      setRecentJourneys(recent);
-    }
-
-    setRefreshing(false);
-  }, [user]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { stats, recentJourneys, refreshing, onRefresh, refetch, greeting } =
+    useHomeLogic();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      fetchData();
+      refetch();
     });
     return unsubscribe;
-  }, [navigation, fetchData]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "Good Morning";
-    if (hour >= 12 && hour < 17) return "Good Afternoon";
-    if (hour >= 17 && hour < 21) return "Good Evening";
-    return "Good Night";
-  };
+  }, [navigation, refetch]);
 
   return (
     <ScrollView
@@ -115,7 +51,7 @@ export default function HomeScreen({ navigation }: Props) {
         resizeMode="cover"
       >
         <View style={[styles.headerOverlay, { paddingTop: insets.top + 40 }]}>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.subtitle}>Beyond the Journey</Text>
         </View>
       </ImageBackground>

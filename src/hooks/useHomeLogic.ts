@@ -1,0 +1,95 @@
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
+
+interface Journey {
+  id: string;
+  title: string;
+  distance_meters: number;
+  duration_seconds: number;
+  created_at: string;
+  start_time: string;
+}
+
+interface HomeStats {
+  totalDistance: number;
+  totalJourneys: number;
+}
+
+export const useHomeLogic = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<HomeStats>({
+    totalDistance: 0,
+    totalJourneys: 0,
+  });
+  const [recentJourneys, setRecentJourneys] = useState<Journey[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Fetch Stats
+      const { data: journeys, error } = await supabase
+        .from("journeys")
+        .select("distance_meters")
+        .eq("user_id", user.id);
+
+      if (!error && journeys) {
+        const totalDist = journeys.reduce(
+          (acc, curr) => acc + (curr.distance_meters || 0),
+          0,
+        );
+        setStats({
+          totalDistance: totalDist,
+          totalJourneys: journeys.length,
+        });
+      }
+
+      // Fetch Recent Journeys
+      const { data: recent, error: recentError } = await supabase
+        .from("journeys")
+        .select(
+          "id, title, distance_meters, duration_seconds, created_at, start_time",
+        )
+        .eq("user_id", user.id)
+        .order("start_time", { ascending: false })
+        .limit(3);
+
+      if (!recentError && recent) {
+        setRecentJourneys(recent);
+      }
+    } catch (e) {
+      console.error("Error fetching home data:", e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Good Morning";
+    if (hour >= 12 && hour < 17) return "Good Afternoon";
+    if (hour >= 17 && hour < 21) return "Good Evening";
+    return "Good Night";
+  };
+
+  return {
+    stats,
+    recentJourneys,
+    refreshing,
+    onRefresh,
+    refetch: fetchData,
+    greeting: getGreeting(),
+  };
+};

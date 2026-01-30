@@ -1,9 +1,8 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Save, Trash2 } from "lucide-react-native";
-import React, { useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
-  Alert,
   ImageBackground,
   Platform,
   StyleSheet,
@@ -15,8 +14,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
+import { useSummaryLogic } from "../hooks/useSummaryLogic";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
@@ -24,51 +22,16 @@ type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
 export default function SummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { distance, duration, coordinates, activityType } = route.params;
-  const { user } = useAuth();
+  const { memory, setMemory, saving, handleSave } = useSummaryLogic(navigation);
 
-  const [memory, setMemory] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
-
-    try {
-      const polylineString = JSON.stringify(coordinates);
-
-      const { error } = await supabase.from("journeys").insert({
-        user_id: user.id,
-        distance_meters: distance,
-        duration_seconds: duration,
-        polyline: polylineString,
-        memory_text: memory,
-        activity_type: activityType,
-        start_time: new Date(
-          coordinates[0]?.timestamp || Date.now(),
-        ).toISOString(),
-        end_time: new Date().toISOString(),
-        title: "Journey on " + new Date().toLocaleDateString(),
-        mood_score: 5,
-      });
-
-      if (error) throw error;
-
-      Alert.alert(
-        "Memory Enscribed",
-        "Your journey has been woven into time.",
-        [
-          {
-            text: "Farewell",
-            onPress: () =>
-              navigation.navigate("MainTabs", { screen: "HomeTab" }),
-          },
-        ],
-      );
-    } catch (e: any) {
-      Alert.alert("Error saving memory", e.message);
-    } finally {
-      setSaving(false);
-    }
+  // Wrap handleSave to pass the correct data
+  const onSave = () => {
+    handleSave({
+      distance,
+      duration,
+      coordinates,
+      activityType,
+    });
   };
 
   return (
@@ -141,7 +104,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
 
             <TouchableOpacity
               style={[styles.saveButton, saving && styles.disabledButton]}
-              onPress={handleSave}
+              onPress={onSave}
               disabled={saving}
             >
               {saving ? (
