@@ -128,6 +128,22 @@ export default function TrackingScreen({ navigation, route }: Props) {
     setIsTracking(true);
     setStartTime(Date.now());
 
+    // OPTIMIZATION: Try to get the last known location immediately
+    // This provides instant feedback if the user was recently using location services (e.g., Maps)
+    try {
+      const lastKnown = await Location.getLastKnownPositionAsync({});
+      if (lastKnown) {
+        const timeDiff = Date.now() - lastKnown.timestamp;
+        // Only use if recent (within 2 minutes)
+        if (timeDiff < 2 * 60 * 1000) {
+          console.log("Using last known location for quick start");
+          handleNewLocation(lastKnown);
+        }
+      }
+    } catch (e) {
+      console.log("Failed to get last known location", e);
+    }
+
     locationSubscription.current = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
@@ -159,6 +175,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
   const MIN_DISTANCE_THRESHOLD = 10; // meters
   const MIN_ACCURACY_THRESHOLD = 15; // meters (Tightened from 25m)
+  const INITIAL_ACCURACY_THRESHOLD = 50; // meters (Relaxed for first point to speed up start)
   const MAX_SPEED_THRESHOLD = 35; // meters per second (~126 km/h)
 
   const handleNewLocation = (
@@ -166,13 +183,21 @@ export default function TrackingScreen({ navigation, route }: Props) {
     shouldAnimate = true,
   ) => {
     // 1. Filter out points with poor accuracy
+    // Relax accuracy for the very first point to ensure immediate feedback/startup
+    const isFirstPoint = routeCoordinates.length === 0;
+    const accuracyThreshold = isFirstPoint
+      ? INITIAL_ACCURACY_THRESHOLD
+      : MIN_ACCURACY_THRESHOLD;
+
     if (
       newLocation.coords.accuracy &&
-      newLocation.coords.accuracy > MIN_ACCURACY_THRESHOLD
+      newLocation.coords.accuracy > accuracyThreshold
     ) {
       console.log(
         "Ignored point due to poor accuracy:",
         newLocation.coords.accuracy,
+        "Threshold:",
+        accuracyThreshold,
       );
       return;
     }
