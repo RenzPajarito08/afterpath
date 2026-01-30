@@ -1,10 +1,12 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Location from "expo-location";
-import { PauseCircle, PlayCircle, StopCircle } from "lucide-react-native";
+import { Pause, Play, Square } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   DeviceEventEmitter,
+  ImageBackground,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -68,7 +70,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     (async () => {
-      // Foreground location
       let { status: foregroundStatus } =
         await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== "granted") {
@@ -77,23 +78,15 @@ export default function TrackingScreen({ navigation, route }: Props) {
         return;
       }
 
-      // Background location
       let { status: backgroundStatus } =
         await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== "granted") {
+        // We'll proceed with foreground tracking only if background is denied
         Alert.alert(
           "Background location permission denied",
           "The app will only track your journey while it's in the foreground.",
         );
       }
-
-      // Notifications (required for Android 13+ tracking notification)
-      const { status: notificationStatus } =
-        await Location.requestForegroundPermissionsAsync(); // This is just a placeholder, actually need to check if we can request specifically for notifications or if it's bundled
-      // Actually, expo-location's foregroundService handles the sticky notification.
-      // But on Android 13+, POST_NOTIFICATIONS is needed for any notification.
-      // Since expo-notifications isn't installed, we can try to request it if we had the library.
-      // For now, let's assume foreground/background location permissions which often bundle the service.
 
       setLocationPermission(true);
       startTracking();
@@ -131,7 +124,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
     setIsTracking(true);
     setStartTime(Date.now());
 
-    // Foreground listener for real-time UI updates
     locationSubscription.current = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
@@ -143,7 +135,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
       },
     );
 
-    // Background tracking
     const isBackgroundStarted = await Location.hasStartedLocationUpdatesAsync(
       LOCATION_TRACKING_TASK,
     );
@@ -153,10 +144,10 @@ export default function TrackingScreen({ navigation, route }: Props) {
         timeInterval: 5000,
         distanceInterval: 5,
         foregroundService: {
-          notificationTitle: "Tracking Journey",
+          notificationTitle: "Navigating the Path",
           notificationBody:
-            "Afterpath is tracking your journey in the background",
-          notificationColor: "#48BB78",
+            "Afterpath is tracing your chronicle in the background",
+          notificationColor: "#2F4F4F",
         },
       });
     }
@@ -175,7 +166,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
     setRouteCoordinates((prevCoords) => {
       const lastCoord = prevCoords[prevCoords.length - 1];
       if (lastCoord) {
-        // Simple deduplication if background and foreground both trigger
         if (
           lastCoord.latitude === newCoord.latitude &&
           lastCoord.longitude === newCoord.longitude &&
@@ -189,7 +179,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
       return [...prevCoords, newCoord];
     });
 
-    // Center map on new location
     mapRef.current?.animateToRegion({
       latitude,
       longitude,
@@ -220,17 +209,12 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
   const handleEndJourney = () => {
     stopTracking();
-    // For now, generate a fake ID or just pass data
-    const journeyId = "temp-id-" + Date.now();
-    // In a real app we would save to DB here or pass data to Summary screen
-    // Since we don't have the Summary screen logic fully fleshed out with DB yet,
-    // I'll just navigate to Home or a Summary placeholder
     Alert.alert(
-      "Journey Ended",
-      `You traveled ${(distance / 1000).toFixed(2)} km in ${formatDuration(duration)}.`,
+      "Chronicle Complete",
+      `Your path covered ${(distance / 1000).toFixed(2)} km over ${formatDuration(duration)}.`,
       [
         {
-          text: "Save Memory",
+          text: "Enscribe Memory",
           onPress: () =>
             navigation.navigate("Summary", {
               distance,
@@ -261,7 +245,9 @@ export default function TrackingScreen({ navigation, route }: Props) {
   if (locationPermission === false) {
     return (
       <View style={styles.container}>
-        <Text>Location permission needed.</Text>
+        <Text style={styles.errorText}>
+          Navigation permission required for the path.
+        </Text>
       </View>
     );
   }
@@ -277,42 +263,49 @@ export default function TrackingScreen({ navigation, route }: Props) {
       >
         <Polyline
           coordinates={routeCoordinates}
-          strokeColor="#48BB78"
-          strokeWidth={4}
+          strokeColor="#2F4F4F"
+          strokeWidth={5}
         />
       </MapView>
 
       <View style={[styles.overlay, { bottom: Math.max(insets.bottom, 20) }]}>
-        <View style={styles.statsCard}>
+        <ImageBackground
+          source={require("../../assets/parchment_texture.png")}
+          style={styles.statsCard}
+          imageStyle={styles.cardParchment}
+          resizeMode="cover"
+        >
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{(distance / 1000).toFixed(2)}</Text>
-            <Text style={styles.statLabel}>km</Text>
+            <Text style={styles.statLabel}>Distance (km)</Text>
           </View>
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{formatDuration(duration)}</Text>
-            <Text style={styles.statLabel}>time</Text>
+            <Text style={styles.statLabel}>Journey Time</Text>
           </View>
-          {/* <View style={styles.statItem}>
-                 <Text style={styles.statValue}>--</Text>
-                 <Text style={styles.statLabel}>pace</Text>
-             </View> */}
-        </View>
+        </ImageBackground>
 
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={togglePause}>
-            {isTracking ? (
-              <PauseCircle size={64} color="#CBD5E0" />
-            ) : (
-              <PlayCircle size={64} color="#48BB78" />
-            )}
+          <TouchableOpacity onPress={togglePause} activeOpacity={0.8}>
+            <ImageBackground
+              source={require("../../assets/parchment_texture.png")}
+              style={[styles.sealButton, styles.playPauseSeal]}
+              imageStyle={styles.sealParchment}
+            >
+              {isTracking ? (
+                <Pause size={32} color="#2F4F4F" />
+              ) : (
+                <Play size={32} color="#2F4F4F" />
+              )}
+            </ImageBackground>
           </TouchableOpacity>
 
           {!isTracking && duration > 0 && (
-            <TouchableOpacity
-              style={styles.controlButton}
-              onPress={handleEndJourney}
-            >
-              <StopCircle size={64} color="#F56565" />
+            <TouchableOpacity onPress={handleEndJourney} activeOpacity={0.8}>
+              <View style={[styles.sealButton, styles.stopSeal]}>
+                <Square size={28} color="#F7F7F2" />
+              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -324,52 +317,92 @@ export default function TrackingScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F7F7F2",
+  },
+  errorText: {
+    marginTop: 100,
+    textAlign: "center",
+    color: "#718096",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   map: {
     ...StyleSheet.absoluteFillObject,
   },
   overlay: {
     position: "absolute",
-    left: 20,
-    right: 20,
+    left: 16,
+    right: 16,
     alignItems: "center",
   },
   statsCard: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 24,
-    width: "100%",
+    alignSelf: "stretch",
     justifyContent: "space-around",
-    marginBottom: 32,
+    marginBottom: 24,
+    elevation: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.4)",
+    overflow: "hidden", // Ensure children/background don't bleed out
+  },
+  cardParchment: {
+    borderRadius: 24,
+    opacity: 0.95,
   },
   statItem: {
     alignItems: "center",
   },
   statValue: {
-    fontSize: 32,
-    fontWeight: "bold",
+    fontSize: 36,
+    fontWeight: "300",
     color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
     fontVariant: ["tabular-nums"],
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#718096",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "rgba(0,0,0,0.1)",
+    alignSelf: "center",
   },
   controls: {
     flexDirection: "row",
     gap: 32,
+    alignItems: "center",
   },
-  controlButton: {
-    backgroundColor: "#FFF",
-    borderRadius: 40,
-    padding: 4, // border
+  sealButton: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    borderWidth: 3,
+  },
+  sealParchment: {
+    borderRadius: 42,
+  },
+  playPauseSeal: {
+    borderColor: "#8B7355", // Bronze/Gold border
+  },
+  stopSeal: {
+    backgroundColor: "#2F4F4F", // Forest Green
+    borderColor: "rgba(255,255,255,0.2)",
   },
 });
