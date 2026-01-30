@@ -15,6 +15,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSummaryLogic } from "../hooks/useSummaryLogic";
+import { retroMapStyle } from "../lib/mapStyles";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
@@ -62,6 +63,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
                 scrollEnabled={false}
                 zoomEnabled={false}
                 provider={PROVIDER_DEFAULT}
+                customMapStyle={retroMapStyle}
                 initialRegion={{
                   latitude: coordinates[0]?.latitude || 0,
                   longitude: coordinates[0]?.longitude || 0,
