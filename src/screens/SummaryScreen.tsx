@@ -5,15 +5,14 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
@@ -77,103 +76,96 @@ export default function SummaryScreen({ navigation, route }: Props) {
       source={require("../../assets/frieren_landscape.png")}
       style={styles.container}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.overlay}>
-          <ScrollView
-            style={styles.flex}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={[
-              styles.contentContainer,
-              {
-                paddingTop: Math.max(insets.top, 24),
-                paddingBottom: Math.max(insets.bottom, 24),
-              },
-            ]}
-          >
-            <Text style={styles.headerTitle}>Journey Epilogue</Text>
+      <View style={styles.overlay}>
+        <KeyboardAwareScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.contentContainer,
+            {
+              paddingTop: Math.max(insets.top, 24),
+              paddingBottom: Math.max(insets.bottom, 24),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          extraScrollHeight={20}
+        >
+          <Text style={styles.headerTitle}>Journey Epilogue</Text>
 
-            <View style={styles.mapCardContainer}>
-              <View style={styles.mapContainer}>
-                <MapView
-                  style={styles.map}
-                  scrollEnabled={false}
-                  zoomEnabled={false}
-                  provider={PROVIDER_DEFAULT}
-                  initialRegion={{
-                    latitude: coordinates[0]?.latitude || 0,
-                    longitude: coordinates[0]?.longitude || 0,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                >
-                  <Polyline
-                    coordinates={coordinates}
-                    strokeColor="#2F4F4F"
-                    strokeWidth={4}
-                  />
-                </MapView>
-                <View style={styles.overlayStats}>
-                  <Text style={styles.overlayText}>
-                    {(distance / 1000).toFixed(2)} km traversed
-                  </Text>
-                </View>
+          <View style={styles.mapCardContainer}>
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                provider={PROVIDER_DEFAULT}
+                initialRegion={{
+                  latitude: coordinates[0]?.latitude || 0,
+                  longitude: coordinates[0]?.longitude || 0,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+              >
+                <Polyline
+                  coordinates={coordinates}
+                  strokeColor="#2F4F4F"
+                  strokeWidth={4}
+                />
+              </MapView>
+              <View style={styles.overlayStats}>
+                <Text style={styles.overlayText}>
+                  {(distance / 1000).toFixed(2)} km traversed
+                </Text>
               </View>
             </View>
+          </View>
 
-            <ImageBackground
-              source={require("../../assets/parchment_texture.png")}
-              style={styles.summaryCard}
-              imageStyle={styles.parchmentImage}
+          <ImageBackground
+            source={require("../../assets/parchment_texture.png")}
+            style={styles.summaryCard}
+            imageStyle={styles.parchmentImage}
+          >
+            <Text style={styles.prompt}>
+              "What stayed with you from this path?"
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholder="Enscribe your reflection here..."
+              value={memory}
+              onChangeText={setMemory}
+              textAlignVertical="top"
+              placeholderTextColor="#A0AEC0"
+            />
+
+            <TouchableOpacity
+              style={[styles.saveButton, saving && styles.disabledButton]}
+              onPress={handleSave}
+              disabled={saving}
             >
-              <Text style={styles.prompt}>
-                "What stayed with you from this path?"
-              </Text>
+              {saving ? (
+                <ActivityIndicator color="#F7F7F2" />
+              ) : (
+                <>
+                  <Save size={20} color="#F7F7F2" style={{ marginRight: 12 }} />
+                  <Text style={styles.saveButtonText}>Enscribe Memory</Text>
+                </>
+              )}
+            </TouchableOpacity>
 
-              <TextInput
-                style={styles.input}
-                multiline
-                placeholder="Enscribe your reflection here..."
-                value={memory}
-                onChangeText={setMemory}
-                textAlignVertical="top"
-                placeholderTextColor="#A0AEC0"
-              />
-
-              <TouchableOpacity
-                style={[styles.saveButton, saving && styles.disabledButton]}
-                onPress={handleSave}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#F7F7F2" />
-                ) : (
-                  <>
-                    <Save
-                      size={20}
-                      color="#F7F7F2"
-                      style={{ marginRight: 12 }}
-                    />
-                    <Text style={styles.saveButtonText}>Enscribe Memory</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.discardButton}
-                onPress={() =>
-                  navigation.navigate("MainTabs", { screen: "HomeTab" })
-                }
-              >
-                <Trash2 size={16} color="#B55D5D" style={{ marginRight: 8 }} />
-                <Text style={styles.discardButtonText}>Discard Journey</Text>
-              </TouchableOpacity>
-            </ImageBackground>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+            <TouchableOpacity
+              style={styles.discardButton}
+              onPress={() =>
+                navigation.navigate("MainTabs", { screen: "HomeTab" })
+              }
+            >
+              <Trash2 size={16} color="#B55D5D" style={{ marginRight: 8 }} />
+              <Text style={styles.discardButtonText}>Discard Journey</Text>
+            </TouchableOpacity>
+          </ImageBackground>
+        </KeyboardAwareScrollView>
+      </View>
     </ImageBackground>
   );
 }
@@ -259,7 +251,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     height: 180,
-    fontSize: 18,
+    fontSize: 16,
     borderColor: "rgba(0,0,0,0.1)",
     borderWidth: 1,
     marginBottom: 24,
@@ -281,7 +273,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "#F7F7F2",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,

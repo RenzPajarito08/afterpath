@@ -93,6 +93,14 @@ export default function HomeScreen({ navigation }: Props) {
     fetchData();
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "Good Morning";
+    if (hour >= 12 && hour < 17) return "Good Afternoon";
+    if (hour >= 17 && hour < 21) return "Good Evening";
+    return "Good Night";
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -107,7 +115,7 @@ export default function HomeScreen({ navigation }: Props) {
         resizeMode="cover"
       >
         <View style={[styles.headerOverlay, { paddingTop: insets.top + 40 }]}>
-          <Text style={styles.greeting}>Good Morning</Text>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.subtitle}>Beyond the Journey</Text>
         </View>
       </ImageBackground>

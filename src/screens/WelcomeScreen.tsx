@@ -5,15 +5,14 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { RootStackParamList } from "../navigation/types";
@@ -160,138 +159,134 @@ export default function WelcomeScreen({ navigation }: Props) {
       style={styles.container}
       resizeMode="cover"
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <KeyboardAwareScrollView
         style={styles.keyboardView}
+        contentContainerStyle={{ flexGrow: 1 }}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          bounces={false}
-          keyboardShouldPersistTaps="handled"
+        <View
+          style={[
+            styles.overlay,
+            {
+              paddingTop: insets.top + 40,
+              paddingBottom: insets.bottom + 20,
+            },
+          ]}
         >
-          <View
-            style={[
-              styles.overlay,
-              {
-                paddingTop: insets.top + 40,
-                paddingBottom: insets.bottom + 20,
-              },
-            ]}
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>Afterpath</Text>
+            <Text style={styles.subtitle}>Beyond the Journey</Text>
+            <View style={styles.divider} />
+            <Text style={styles.quote}>
+              "The journey is the reward for those who seek memories."
+            </Text>
+          </View>
+
+          <ImageBackground
+            source={require("../../assets/parchment_texture.png")}
+            style={styles.parchmentContainer}
+            imageStyle={styles.parchmentImage}
           >
-            <View style={styles.headerContainer}>
-              <Text style={styles.title}>Afterpath</Text>
-              <Text style={styles.subtitle}>Beyond the Journey</Text>
-              <View style={styles.divider} />
-              <Text style={styles.quote}>
-                "The journey is the reward for those who seek memories."
-              </Text>
-            </View>
-
-            <ImageBackground
-              source={require("../../assets/parchment_texture.png")}
-              style={styles.parchmentContainer}
-              imageStyle={styles.parchmentImage}
-            >
-              <View style={styles.inputSection}>
-                {!isLogin && (
-                  <View style={styles.inputWrapper}>
-                    <UserPlus
-                      size={20}
-                      color="#718096"
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Chosen Username"
-                      placeholderTextColor="#A0AEC0"
-                      value={username}
-                      onChangeText={setUsername}
-                      autoCapitalize="none"
-                    />
-                  </View>
-                )}
-
+            <View style={styles.inputSection}>
+              {!isLogin && (
                 <View style={styles.inputWrapper}>
-                  <Mail size={20} color="#718096" style={styles.inputIcon} />
+                  <UserPlus
+                    size={20}
+                    color="#718096"
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
-                    placeholder={
-                      isLogin ? "Email or Username" : "Sanctuary Email"
-                    }
+                    placeholder="Chosen Username"
                     placeholderTextColor="#A0AEC0"
-                    value={emailOrUsername}
-                    onChangeText={setEmailOrUsername}
+                    value={username}
+                    onChangeText={setUsername}
                     autoCapitalize="none"
-                    keyboardType={isLogin ? "default" : "email-address"}
                   />
                 </View>
+              )}
 
+              <View style={styles.inputWrapper}>
+                <Mail size={20} color="#718096" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder={
+                    isLogin ? "Email or Username" : "Sanctuary Email"
+                  }
+                  placeholderTextColor="#A0AEC0"
+                  value={emailOrUsername}
+                  onChangeText={setEmailOrUsername}
+                  autoCapitalize="none"
+                  keyboardType={isLogin ? "default" : "email-address"}
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Lock size={20} color="#718096" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder={isLogin ? "Secret Phrase" : "New Secret Phrase"}
+                  placeholderTextColor="#A0AEC0"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {!isLogin && (
                 <View style={styles.inputWrapper}>
                   <Lock size={20} color="#718096" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder={
-                      isLogin ? "Secret Phrase" : "New Secret Phrase"
-                    }
+                    placeholder="Confirm Secret Phrase"
                     placeholderTextColor="#A0AEC0"
-                    value={password}
-                    onChangeText={setPassword}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
                     secureTextEntry
                     autoCapitalize="none"
                   />
                 </View>
+              )}
 
-                {!isLogin && (
-                  <View style={styles.inputWrapper}>
-                    <Lock size={20} color="#718096" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Confirm Secret Phrase"
-                      placeholderTextColor="#A0AEC0"
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry
-                      autoCapitalize="none"
-                    />
-                  </View>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={isLogin ? signIn : signUp}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#F7F7F2" />
+                ) : (
+                  <>
+                    {isLogin ? (
+                      <LogIn size={20} color="#F7F7F2" />
+                    ) : (
+                      <UserPlus size={20} color="#F7F7F2" />
+                    )}
+                    <Text style={styles.primaryButtonText}>
+                      {isLogin ? "Begin Journey" : "Join Fellowship"}
+                    </Text>
+                  </>
                 )}
+              </TouchableOpacity>
+            </View>
+          </ImageBackground>
 
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={isLogin ? signIn : signUp}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#F7F7F2" />
-                  ) : (
-                    <>
-                      {isLogin ? (
-                        <LogIn size={20} color="#F7F7F2" />
-                      ) : (
-                        <UserPlus size={20} color="#F7F7F2" />
-                      )}
-                      <Text style={styles.primaryButtonText}>
-                        {isLogin ? "Begin Journey" : "Join Fellowship"}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </ImageBackground>
-
-            <TouchableOpacity
-              onPress={() => setIsLogin(!isLogin)}
-              style={styles.switchButton}
-            >
-              <Text style={styles.switchText}>
-                {isLogin
-                  ? "Seek a new fate? Sign Up"
-                  : "Retrace your steps? Sign In"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <TouchableOpacity
+            onPress={() => setIsLogin(!isLogin)}
+            style={styles.switchButton}
+          >
+            <Text style={styles.switchText}>
+              {isLogin
+                ? "Seek a new fate? Sign Up"
+                : "Retrace your steps? Sign In"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
     </ImageBackground>
   );
 }

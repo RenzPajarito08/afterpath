@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   input: {
-    fontSize: 20,
+    fontSize: 16,
     color: "#F7F7F2",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
     paddingVertical: 12,
