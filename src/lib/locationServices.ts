@@ -50,10 +50,6 @@ export async function snapToRoads(
       );
 
       if (data.snappedPoints) {
-        Alert.alert(
-          "Roads API Success",
-          `Successfully snapped points to roads! Found ${data.snappedPoints.length} points in this batch.`,
-        );
         // Reconstruct coordinates with timestamps
         const batchSnapped: Coordinate[] = [];
 
