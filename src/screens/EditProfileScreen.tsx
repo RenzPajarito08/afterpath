@@ -5,15 +5,14 @@ import {
   ActivityIndicator,
   Alert,
   ImageBackground,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -135,9 +134,12 @@ export default function EditProfileScreen() {
       source={require("../../assets/parchment_texture.png")}
       style={styles.container}
     >
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
       >
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity
@@ -149,68 +151,63 @@ export default function EditProfileScreen() {
           <Text style={styles.title}>Refine Identity</Text>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <View style={styles.editForm}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>True Name</Text>
-              <TextInput
-                style={styles.input}
-                value={editFirstName}
-                onChangeText={setEditFirstName}
-                placeholder="Enscribed at birth"
-                maxLength={25}
-                placeholderTextColor="#A0AEC0"
-              />
-              <View style={styles.inputUnderline} />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Lineage</Text>
-              <TextInput
-                style={styles.input}
-                value={editLastName}
-                onChangeText={setEditLastName}
-                placeholder="Family descent"
-                maxLength={25}
-                placeholderTextColor="#A0AEC0"
-              />
-              <View style={styles.inputUnderline} />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Day of Dawning (Birthday)</Text>
-              <TextInput
-                style={styles.input}
-                value={editBirthday}
-                onChangeText={handleBirthdayChange}
-                placeholder="YYYY-MM-DD"
-                keyboardType="numeric"
-                maxLength={10}
-                placeholderTextColor="#A0AEC0"
-              />
-              <View style={styles.inputUnderline} />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveButton, saving && styles.disabledButton]}
-              onPress={updateProfile}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color="#F7F7F2" />
-              ) : (
-                <>
-                  <Save size={20} color="#F7F7F2" />
-                  <Text style={styles.saveButtonText}>Confirm details</Text>
-                </>
-              )}
-            </TouchableOpacity>
+        <View style={styles.editForm}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>True Name</Text>
+            <TextInput
+              style={styles.input}
+              value={editFirstName}
+              onChangeText={setEditFirstName}
+              placeholder="Enscribed at birth"
+              maxLength={25}
+              placeholderTextColor="#A0AEC0"
+            />
+            <View style={styles.inputUnderline} />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Lineage</Text>
+            <TextInput
+              style={styles.input}
+              value={editLastName}
+              onChangeText={setEditLastName}
+              placeholder="Family descent"
+              maxLength={25}
+              placeholderTextColor="#A0AEC0"
+            />
+            <View style={styles.inputUnderline} />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Day of Dawning (Birthday)</Text>
+            <TextInput
+              style={styles.input}
+              value={editBirthday}
+              onChangeText={handleBirthdayChange}
+              placeholder="YYYY-MM-DD"
+              keyboardType="numeric"
+              maxLength={10}
+              placeholderTextColor="#A0AEC0"
+            />
+            <View style={styles.inputUnderline} />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.disabledButton]}
+            onPress={updateProfile}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#F7F7F2" />
+            ) : (
+              <>
+                <Save size={20} color="#F7F7F2" />
+                <Text style={styles.saveButtonText}>Confirm details</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
     </ImageBackground>
   );
 }
