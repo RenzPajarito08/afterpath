@@ -1,11 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import * as Location from "expo-location";
 import { Pause, Play, Square } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  DeviceEventEmitter,
   ImageBackground,
   Platform,
   StyleSheet,
@@ -16,272 +14,44 @@ import {
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  LOCATION_TRACKING_TASK,
-  LOCATION_UPDATED_EVENT,
-} from "../lib/locationTasks";
+  getDistance,
+  useJourneyTracker,
+} from "../hooks/tracking/useJourneyTracker";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Tracking">;
 
-export interface Coordinate {
-  latitude: number;
-  longitude: number;
-  timestamp: number;
-}
-
-const HAAVERSINE_R = 6371e3; // Earth radius in meters
-
-function getDistance(coord1: Coordinate, coord2: Coordinate) {
-  const lat1 = (coord1.latitude * Math.PI) / 180;
-  const lat2 = (coord2.latitude * Math.PI) / 180;
-  const deltaLat = ((coord2.latitude - coord1.latitude) * Math.PI) / 180;
-  const deltaLon = ((coord2.longitude - coord1.longitude) * Math.PI) / 180;
-
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(deltaLon / 2) *
-      Math.sin(deltaLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return HAAVERSINE_R * c;
-}
-
 export default function TrackingScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { activityType } = route.params;
-  const [locationPermission, setLocationPermission] = useState<boolean | null>(
-    null,
-  );
-  const [isTracking, setIsTracking] = useState(false);
-  const [routeCoordinates, setRouteCoordinates] = useState<Coordinate[]>([]);
-  const [distance, setDistance] = useState(0); // in meters
-  const [duration, setDuration] = useState(0); // in seconds
-  const [currentLocation, setCurrentLocation] =
-    useState<Location.LocationObject | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [accumulatedDuration, setAccumulatedDuration] = useState(0); // in seconds
   const [isSaving, setIsSaving] = useState(false);
-
   const mapRef = useRef<MapView>(null);
-  const locationSubscription = useRef<Location.LocationSubscription | null>(
-    null,
-  );
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const {
+    locationPermission,
+    isTracking,
+    routeCoordinates,
+    distance,
+    duration,
+    currentLocation,
+    togglePause,
+    stopTracking,
+  } = useJourneyTracker();
+
+  // Animate map to new location
   useEffect(() => {
-    (async () => {
-      let { status: foregroundStatus } =
-        await Location.requestForegroundPermissionsAsync();
-      if (foregroundStatus !== "granted") {
-        Alert.alert("Permission to access location was denied");
-        setLocationPermission(false);
-        return;
-      }
-
-      let { status: backgroundStatus } =
-        await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus !== "granted") {
-        // We'll proceed with foreground tracking only if background is denied
-        Alert.alert(
-          "Background location permission denied",
-          "The app will only track your journey while it's in the foreground.",
-        );
-      }
-
-      setLocationPermission(true);
-      startTracking();
-    })();
-
-    const subscription = DeviceEventEmitter.addListener(
-      LOCATION_UPDATED_EVENT,
-      (locations: Location.LocationObject[]) => {
-        locations.forEach((location, index) =>
-          handleNewLocation(location, index === locations.length - 1),
-        );
-      },
-    );
-
-    return () => {
-      stopTracking();
-      subscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isTracking && startTime) {
-      timerRef.current = setInterval(() => {
-        const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        setDuration(accumulatedDuration + elapsed);
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isTracking, startTime, accumulatedDuration]);
-
-  const startTracking = async () => {
-    setIsTracking(true);
-    setStartTime(Date.now());
-
-    // OPTIMIZATION: Try to get the last known location immediately
-    // This provides instant feedback if the user was recently using location services (e.g., Maps)
-    try {
-      const lastKnown = await Location.getLastKnownPositionAsync({});
-      if (lastKnown) {
-        const timeDiff = Date.now() - lastKnown.timestamp;
-        // Only use if recent (within 2 minutes)
-        if (timeDiff < 2 * 60 * 1000) {
-          console.log("Using last known location for quick start");
-          handleNewLocation(lastKnown);
-        }
-      }
-    } catch (e) {
-      console.log("Failed to get last known location", e);
-    }
-
-    locationSubscription.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        distanceInterval: 5,
-      },
-      (newLocation) => {
-        handleNewLocation(newLocation);
-      },
-    );
-
-    const isBackgroundStarted = await Location.hasStartedLocationUpdatesAsync(
-      LOCATION_TRACKING_TASK,
-    );
-    if (!isBackgroundStarted) {
-      await Location.startLocationUpdatesAsync(LOCATION_TRACKING_TASK, {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        distanceInterval: 5,
-        foregroundService: {
-          notificationTitle: "Navigating the Path",
-          notificationBody:
-            "Afterpath is tracing your chronicle in the background",
-          notificationColor: "#2F4F4F",
-        },
-      });
-    }
-  };
-
-  const MIN_DISTANCE_THRESHOLD = 10; // meters
-  const MIN_ACCURACY_THRESHOLD = 15; // meters (Tightened from 25m)
-  const INITIAL_ACCURACY_THRESHOLD = 50; // meters (Relaxed for first point to speed up start)
-  const MAX_SPEED_THRESHOLD = 35; // meters per second (~126 km/h)
-
-  const handleNewLocation = (
-    newLocation: Location.LocationObject,
-    shouldAnimate = true,
-  ) => {
-    // 1. Filter out points with poor accuracy
-    // Relax accuracy for the very first point to ensure immediate feedback/startup
-    const isFirstPoint = routeCoordinates.length === 0;
-    const accuracyThreshold = isFirstPoint
-      ? INITIAL_ACCURACY_THRESHOLD
-      : MIN_ACCURACY_THRESHOLD;
-
-    if (
-      newLocation.coords.accuracy &&
-      newLocation.coords.accuracy > accuracyThreshold
-    ) {
-      console.log(
-        "Ignored point due to poor accuracy:",
-        newLocation.coords.accuracy,
-        "Threshold:",
-        accuracyThreshold,
-      );
-      return;
-    }
-
-    const { latitude, longitude } = newLocation.coords;
-    const newCoord: Coordinate = {
-      latitude,
-      longitude,
-      timestamp: newLocation.timestamp,
-    };
-
-    setCurrentLocation(newLocation);
-
-    setRouteCoordinates((prevCoords) => {
-      const lastCoord = prevCoords[prevCoords.length - 1];
-      if (lastCoord) {
-        // 2. Filter out duplicate timestamps or identical coordinates
-        // Removed timestamp check to avoid saving same GPS point just because time advanced
-        if (
-          lastCoord.latitude === newCoord.latitude &&
-          lastCoord.longitude === newCoord.longitude
-        ) {
-          return prevCoords;
-        }
-
-        // 3. Calculate distance and time delta
-        const dist = getDistance(lastCoord, newCoord);
-        const timeDelta = (newCoord.timestamp - lastCoord.timestamp) / 1000; // seconds
-
-        // 4. Filter out small movements (drift)
-        if (dist < MIN_DISTANCE_THRESHOLD) {
-          console.log("Ignored point due to small distance:", dist);
-          return prevCoords;
-        }
-
-        // 5. Speed Filter: Ignore impossible jumps
-        if (timeDelta > 0) {
-          const speed = dist / timeDelta;
-          if (speed > MAX_SPEED_THRESHOLD) {
-            console.log("Ignored point due to impossible speed:", speed, "m/s");
-            return prevCoords;
-          }
-        }
-
-        setDistance((d) => d + dist);
-      }
-      return [...prevCoords, newCoord];
-    });
-
-    if (shouldAnimate) {
+    if (currentLocation) {
       mapRef.current?.animateToRegion({
-        latitude,
-        longitude,
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       });
     }
-  };
-
-  const stopTracking = async () => {
-    if (isTracking && startTime) {
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
-      setAccumulatedDuration((prev) => prev + elapsed);
-      setDuration(accumulatedDuration + elapsed);
-    }
-    setIsTracking(false);
-    setStartTime(null);
-    if (locationSubscription.current) {
-      locationSubscription.current.remove();
-      locationSubscription.current = null;
-    }
-    await Location.stopLocationUpdatesAsync(LOCATION_TRACKING_TASK);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+  }, [currentLocation]);
 
   const handleEndJourney = async () => {
     stopTracking();
-
-    // Preliminary check to see if we have enough points to snap
-    // user might cancel, so we don't snap yet.
 
     Alert.alert(
       "Chronicle Complete",
@@ -294,12 +64,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
             try {
               let finalCoordinates = routeCoordinates;
 
-              // Attempt to snap to roads if API key is present
-              // We can show a small loading indicator if this takes time,
-              // but for now we'll do it optimistically or block slightly.
-              // Ideally this should be a proper async loading state in UI.
               try {
-                // Only snap if we have significant movement to avoid API waste on empty tests
                 if (routeCoordinates.length > 5) {
                   const { snapToRoads } =
                     await import("../lib/locationServices");
@@ -312,11 +77,10 @@ export default function TrackingScreen({ navigation, route }: Props) {
                 console.log("Failed to snap path: ", e);
               }
 
-              // Recalculate distance if we have a new path (snapped)
-              // Even if we didn't snap, we can maintain the original distance or recalc it.
-              // But if we snapped, we MUST recalc to match the new visual path.
               let finalDistance = distance;
               if (finalCoordinates !== routeCoordinates) {
+                // If we have snapped coordinates, we should recalculate the distance
+                // We need getDistance exposed or copied. I exported it from the hook file.
                 finalDistance = 0;
                 for (let i = 0; i < finalCoordinates.length - 1; i++) {
                   finalDistance += getDistance(
@@ -341,14 +105,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
         },
       ],
     );
-  };
-
-  const togglePause = () => {
-    if (isTracking) {
-      stopTracking();
-    } else {
-      startTracking();
-    }
   };
 
   const formatDuration = (seconds: number) => {
