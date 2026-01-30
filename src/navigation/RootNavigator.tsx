@@ -14,6 +14,8 @@ import SummaryScreen from "../screens/SummaryScreen";
 
 import JourneyDetailScreen from "../screens/JourneyDetailScreen";
 
+import EditProfileScreen from "../screens/EditProfileScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 import TabNavigator from "./TabNavigator";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -45,6 +47,8 @@ export default function RootNavigator() {
               name="JourneyDetail"
               component={JourneyDetailScreen}
             />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           </>
         ) : (
           <Stack.Screen name="Welcome" component={WelcomeScreen} />

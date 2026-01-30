@@ -1,42 +1,73 @@
-import { Edit2, LogOut, Save, User, X } from "lucide-react-native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  Activity,
+  Calendar,
+  Clock,
+  Compass,
+  Map as MapIcon,
+  Settings,
+  Zap,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
+  Image,
+  ImageBackground,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
-// If DateTimePicker is not installed, we can use a simple text input or ask user to install it.
-// For now, I'll use a simple TextInput for birthday (YYYY-MM-DD) to avoid complexity with peer deps if not checked.
-// If available, users typically use @react-native-community/datetimepicker. I will stick to text for simplicity unless I see it in package.json later.
+import { RootStackParamList } from "../navigation/types";
+
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "ProfileTab"
+>;
+
+const StatRow = ({ icon: Icon, label, value, subtext }: any) => (
+  <View style={styles.statContainer}>
+    <ImageBackground
+      source={require("../../assets/parchment_texture.png")}
+      style={styles.statParchment}
+      imageStyle={styles.parchmentImage}
+    >
+      <View style={styles.statContent}>
+        <View style={styles.statIconContainer}>
+          <Icon size={20} color="#2F4F4F" />
+        </View>
+        <View style={styles.statInfo}>
+          <Text style={styles.statLabel}>{label}</Text>
+          {subtext && <Text style={styles.statSubtext}>{subtext}</Text>}
+        </View>
+        <Text style={styles.statValue}>{value}</Text>
+      </View>
+    </ImageBackground>
+  </View>
+);
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
+  const isFocused = useIsFocused();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
 
-  // Profile State
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [birthday, setBirthday] = useState(""); // Format YYYY-MM-DD
   const [username, setUsername] = useState("");
 
   useEffect(() => {
-    if (user) {
+    if (user && isFocused) {
       getProfile();
     }
-  }, [user]);
+  }, [user, isFocused]);
 
   const getProfile = async () => {
     try {
@@ -45,7 +76,7 @@ export default function ProfileScreen() {
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`username, first_name, last_name, birthday`)
+        .select(`username, first_name, last_name`)
         .eq("id", user.id)
         .single();
 
@@ -54,162 +85,107 @@ export default function ProfileScreen() {
       }
 
       if (data) {
-        setUsername(data.username || "");
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
-        setBirthday(data.birthday || "");
+        setUsername(data.username || "");
       }
     } catch (error: any) {
-      // Silent error or log
       console.log("Error loading profile", error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateProfile = async () => {
-    try {
-      setSaving(true);
-      if (!user) throw new Error("No user on the session!");
-
-      const updates = {
-        id: user.id,
-        first_name: firstName,
-        last_name: lastName,
-        birthday: birthday || null,
-        updated_at: new Date(),
-      };
-
-      const { error } = await supabase.from("profiles").upsert(updates);
-
-      if (error) {
-        throw error;
-      }
-
-      Alert.alert("Success", "Profile updated successfully");
-      setEditing(false);
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    // Confirm logout
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: () => signOut() },
-    ]);
-  };
-
-  if (loading) {
+  if (loading && !firstName) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#48BB78" />
-      </View>
+      <ImageBackground
+        source={require("../../assets/parchment_texture.png")}
+        style={styles.centerContainer}
+      >
+        <ActivityIndicator size="large" color="#2F4F4F" />
+        <Text style={styles.loadingText}>Reading your chronicle...</Text>
+      </ImageBackground>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <View style={styles.container}>
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={[
-          styles.contentContainer,
+          styles.scrollContent,
           {
-            paddingTop: Math.max(insets.top, 24),
             paddingBottom: Math.max(insets.bottom, 24),
           },
         ]}
+        bounces={false}
       >
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <User size={64} color="#A0AEC0" />
-          </View>
-          <Text style={styles.email}>{user?.email}</Text>
-          {username ? <Text style={styles.username}>@{username}</Text> : null}
-        </View>
-
-        <View style={styles.formContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            {!editing ? (
+        <ImageBackground
+          source={require("../../assets/fantasy_header.png")}
+          style={styles.headerBg}
+          resizeMode="cover"
+        >
+          <View style={[styles.headerOverlay, { paddingTop: insets.top + 20 }]}>
+            <View style={styles.headerTop}>
+              <Text style={styles.headerTitle}>Adventurer's Card</Text>
               <TouchableOpacity
-                onPress={() => setEditing(true)}
-                style={styles.iconButton}
+                style={styles.settingsButton}
+                onPress={() => navigation.navigate("Settings")}
               >
-                <Edit2 size={20} color="#48BB78" />
+                <Settings size={28} color="#F7F7F2" />
               </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={() => setEditing(false)}
-                style={styles.iconButton}
-              >
-                <X size={20} color="#E53E3E" />
-              </TouchableOpacity>
-            )}
-          </View>
+            </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>First Name</Text>
-            <TextInput
-              style={[styles.input, !editing && styles.disabledInput]}
-              value={firstName}
-              onChangeText={setFirstName}
-              editable={editing}
-              placeholder="Enter first name"
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={[styles.input, !editing && styles.disabledInput]}
-              value={lastName}
-              onChangeText={setLastName}
-              editable={editing}
-              placeholder="Enter last name"
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Birthday</Text>
-            <TextInput
-              style={[styles.input, !editing && styles.disabledInput]}
-              value={birthday}
-              onChangeText={setBirthday}
-              editable={editing}
-              placeholder="YYYY-MM-DD"
-            />
-          </View>
-
-          {editing && (
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={updateProfile}
-              disabled={saving}
+            <ImageBackground
+              source={require("../../assets/parchment_texture.png")}
+              style={styles.identityCard}
+              imageStyle={styles.parchmentImage}
             >
-              {saving ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Save size={20} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
+              <View style={styles.identityWrapper}>
+                <View style={styles.avatarContainer}>
+                  <Image
+                    source={{
+                      uri: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`,
+                    }}
+                    style={styles.avatar}
+                  />
+                </View>
+                <View style={styles.identityInfo}>
+                  <Text style={styles.fullName} numberOfLines={1}>
+                    {firstName || lastName
+                      ? `${firstName} ${lastName}`
+                      : username || user?.email}
+                  </Text>
+                  <Text style={styles.rankText}>@{username || "Wayfarer"}</Text>
+                </View>
+              </View>
+            </ImageBackground>
+          </View>
+        </ImageBackground>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <LogOut size={20} color="#E53E3E" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={styles.contentContainer}>
+          <Text style={styles.sectionTitle}>Journey Statistics</Text>
+          <View style={styles.statsList}>
+            <StatRow
+              icon={Compass}
+              label="Total Distance"
+              value="1,420 km"
+              subtext="Equivalent to crossing many borders"
+            />
+            <StatRow icon={MapIcon} label="Quests Completed" value="84" />
+            <StatRow icon={Clock} label="Time in Motion" value="120 Hrs" />
+            <StatRow icon={Zap} label="Highest Pace" value="12 km/h" />
+            <StatRow icon={Activity} label="Average Rhythm" value="6 km/h" />
+            <StatRow
+              icon={Calendar}
+              label="Chronicle Status"
+              value="Active"
+              subtext="Tracing paths since 2024"
+            />
+          </View>
+        </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -218,113 +194,151 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F7F7F2",
   },
-  contentContainer: {
-    padding: 24,
+  scrollContent: {
+    flexGrow: 1,
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#E2E8F0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#CBD5E0",
-  },
-  email: {
-    fontSize: 18,
-    fontWeight: "600",
+  loadingText: {
+    marginTop: 16,
     color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
-  username: {
-    fontSize: 14,
-    color: "#718096",
-    marginTop: 4,
+  headerBg: {
+    height: 240,
+    width: "100%",
   },
-  formContainer: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
+  headerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
     padding: 24,
-    marginBottom: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    justifyContent: "space-between",
   },
-  sectionHeader: {
+  headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+  },
+  headerTitle: {
+    fontSize: 24,
+    color: "#F7F7F2",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  settingsButton: {
+    padding: 4,
+  },
+  identityCard: {
+    marginBottom: -60,
+    borderRadius: 24,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  parchmentImage: {
+    borderRadius: 24,
+  },
+  identityWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    gap: 20,
+  },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#FFF",
+    borderWidth: 2,
+    borderColor: "#2F4F4F",
+    overflow: "hidden",
+  },
+  avatar: {
+    width: "100%",
+    height: "100%",
+  },
+  identityInfo: {
+    flex: 1,
+  },
+  fullName: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  rankText: {
+    fontSize: 14,
+    color: "#2F4F4F",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
+    marginTop: 4,
+    letterSpacing: 1,
+  },
+  contentContainer: {
+    padding: 24,
+    paddingTop: 80,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2D3748",
-  },
-  iconButton: {
-    padding: 8,
-  },
-  fieldGroup: {
-    marginBottom: 16,
-  },
-  label: {
     fontSize: 14,
+    fontWeight: "700",
     color: "#718096",
-    marginBottom: 8,
+    marginBottom: 20,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  statsList: {
+    gap: 16,
+  },
+  statContainer: {
+    borderRadius: 24,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  statParchment: {
+    borderRadius: 24,
+  },
+  statContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 16,
+  },
+  statIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(47, 79, 79, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statInfo: {
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: 16,
+    color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
     fontWeight: "500",
   },
-  input: {
-    backgroundColor: "#F7FAFC",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: "#2D3748",
+  statSubtext: {
+    fontSize: 12,
+    color: "#718096",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    marginTop: 2,
   },
-  disabledInput: {
-    backgroundColor: "#FAFAFA",
-    color: "#4A5568",
-    borderColor: "transparent",
-  },
-  saveButton: {
-    backgroundColor: "#48BB78",
-    borderRadius: 8,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  saveButtonText: {
-    color: "#FFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  logoutButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#FED7D7",
-  },
-  logoutText: {
-    color: "#E53E3E",
-    fontWeight: "600",
-    fontSize: 16,
+  statValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2F4F4F",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
 });

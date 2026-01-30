@@ -1,8 +1,10 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { formatDistanceToNow } from "date-fns";
-import { Clock, Footprints, MapPin } from "lucide-react-native";
+import { ChevronRight, Clock, Footprints, MapPin } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ImageBackground,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -43,7 +45,6 @@ export default function HomeScreen({ navigation }: Props) {
   const fetchData = useCallback(async () => {
     if (!user) return;
 
-    // Fetch stats
     const { data: journeys, error } = await supabase
       .from("journeys")
       .select("distance_meters")
@@ -60,7 +61,6 @@ export default function HomeScreen({ navigation }: Props) {
       });
     }
 
-    // Fetch recent
     const { data: recent, error: recentError } = await supabase
       .from("journeys")
       .select(
@@ -81,7 +81,6 @@ export default function HomeScreen({ navigation }: Props) {
     fetchData();
   }, [fetchData]);
 
-  // Refresh when focusing screen (e.g. returning from Summary)
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       fetchData();
@@ -97,93 +96,114 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[
-        styles.contentContainer,
-        {
-          paddingTop: Math.max(insets.top, 24),
-          paddingBottom: Math.max(insets.bottom, 24),
-        },
-      ]}
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Good Morning</Text>
-        <Text style={styles.subtitle}>Ready for a new memory?</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.startCard}
-        onPress={() => navigation.navigate("StartJourney")}
+      <ImageBackground
+        source={require("../../assets/fantasy_header.png")}
+        style={styles.headerImage}
+        resizeMode="cover"
       >
-        <View style={styles.iconContainer}>
-          <Footprints color="#FFF" size={32} />
+        <View style={[styles.headerOverlay, { paddingTop: insets.top + 40 }]}>
+          <Text style={styles.greeting}>Good Morning</Text>
+          <Text style={styles.subtitle}>Beyond the Journey</Text>
         </View>
-        <Text style={styles.startCardText}>Start Journey</Text>
-      </TouchableOpacity>
+      </ImageBackground>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>
-            {(stats.totalDistance / 1000).toFixed(1)}
-          </Text>
-          <Text style={styles.statLabel}>Total km</Text>
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{stats.totalJourneys}</Text>
-          <Text style={styles.statLabel}>Journeys</Text>
-        </View>
-      </View>
-
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>Recent Memories</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("TimelineTab")}>
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
-
-      {recentJourneys.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No journeys yet.</Text>
-        </View>
-      ) : (
-        recentJourneys.map((journey) => (
+      <View style={styles.content}>
+        <ImageBackground
+          source={require("../../assets/parchment_texture.png")}
+          style={styles.startCard}
+          imageStyle={styles.cardParchment}
+        >
           <TouchableOpacity
-            key={journey.id}
-            style={styles.journeyCard}
-            onPress={() =>
-              navigation.navigate("JourneyDetail", { journeyId: journey.id })
-            }
+            style={styles.startCardInternal}
+            onPress={() => navigation.navigate("StartJourney")}
           >
-            <View style={styles.journeyHeader}>
-              <Text style={styles.journeyTitle}>
-                {journey.title || "Untitled Journey"}
-              </Text>
-              <Text style={styles.journeyDate}>
-                {formatDistanceToNow(new Date(journey.start_time), {
-                  addSuffix: true,
-                })}
-              </Text>
+            <View style={styles.iconContainer}>
+              <Footprints color="#F7F7F2" size={32} />
             </View>
-            <View style={styles.journeyFooter}>
-              <View style={styles.journeyStat}>
-                <MapPin size={14} color="#718096" />
-                <Text style={styles.journeyStatText}>
-                  {(journey.distance_meters / 1000).toFixed(2)} km
-                </Text>
-              </View>
-              <View style={styles.journeyStat}>
-                <Clock size={14} color="#718096" />
-                <Text style={styles.journeyStatText}>
-                  {Math.floor(journey.duration_seconds / 60)} mins
-                </Text>
-              </View>
+            <View>
+              <Text style={styles.startCardTitle}>New Quest</Text>
+              <Text style={styles.startCardSub}>Begin a new memory</Text>
             </View>
           </TouchableOpacity>
-        ))
-      )}
+        </ImageBackground>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>
+              {(stats.totalDistance / 1000).toFixed(1)}
+            </Text>
+            <Text style={styles.statLabel}>Total km</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{stats.totalJourneys}</Text>
+            <Text style={styles.statLabel}>Journeys</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Recent Memories</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("TimelineTab")}
+            style={styles.viewAllBtn}
+          >
+            <Text style={styles.viewAllText}>View Logbook</Text>
+            <ChevronRight size={16} color="#48BB78" />
+          </TouchableOpacity>
+        </View>
+
+        {recentJourneys.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No memories recorded yet.</Text>
+          </View>
+        ) : (
+          recentJourneys.map((journey) => (
+            <TouchableOpacity
+              key={journey.id}
+              onPress={() =>
+                navigation.navigate("JourneyDetail", { journeyId: journey.id })
+              }
+              style={styles.journeyCardContainer}
+            >
+              <ImageBackground
+                source={require("../../assets/parchment_texture.png")}
+                style={styles.journeyCard}
+                imageStyle={styles.cardParchment}
+              >
+                <View style={styles.journeyHeader}>
+                  <Text style={styles.journeyTitle}>
+                    {journey.title || "Untitled Fragment"}
+                  </Text>
+                  <Text style={styles.journeyDate}>
+                    {formatDistanceToNow(new Date(journey.start_time), {
+                      addSuffix: true,
+                    })}
+                  </Text>
+                </View>
+                <View style={styles.journeyFooter}>
+                  <View style={styles.journeyStat}>
+                    <MapPin size={14} color="#718096" />
+                    <Text style={styles.journeyStatText}>
+                      {(journey.distance_meters / 1000).toFixed(2)} km
+                    </Text>
+                  </View>
+                  <View style={styles.journeyStat}>
+                    <Clock size={14} color="#718096" />
+                    <Text style={styles.journeyStatText}>
+                      {Math.floor(journey.duration_seconds / 60)} mins
+                    </Text>
+                  </View>
+                </View>
+              </ImageBackground>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -193,68 +213,100 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F7F7F2",
   },
-  contentContainer: {
-    padding: 24,
+  headerImage: {
+    height: 220,
   },
-  header: {
-    marginBottom: 32,
+  headerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)", // Slightly darker for better contrast
+    padding: 24,
+    justifyContent: "flex-end",
+    paddingBottom: 40, // More bottom padding for content overlap
   },
   greeting: {
     fontSize: 32,
     fontWeight: "300",
-    color: "#2D3748",
+    color: "#F7F7F2",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#718096",
+    fontSize: 14,
+    color: "#E2E8F0",
     marginTop: 4,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
+  content: {
+    padding: 24,
+    marginTop: -20,
+    backgroundColor: "#F7F7F2",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  cardParchment: {
+    borderRadius: 16,
+    opacity: 0.9,
   },
   startCard: {
-    backgroundColor: "#48BB78",
     borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    flexDirection: "row",
+    marginBottom: 24,
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 32,
+    shadowRadius: 6,
+  },
+  startCardInternal: {
+    padding: 24,
+    flexDirection: "row",
+    alignItems: "center",
   },
   iconContainer: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "#2F4F4F",
     padding: 12,
     borderRadius: 12,
     marginRight: 16,
   },
-  startCardText: {
-    color: "#FFF",
+  startCardTitle: {
+    color: "#2D3748",
     fontSize: 20,
     fontWeight: "600",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  startCardSub: {
+    color: "#4A5568",
+    fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   statsContainer: {
     flexDirection: "row",
     backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 24,
     justifyContent: "space-around",
     marginBottom: 32,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   statItem: {
     alignItems: "center",
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: "300",
     color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   statLabel: {
     fontSize: 12,
     color: "#718096",
     marginTop: 4,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
-  divider: {
+  statDivider: {
     width: 1,
     backgroundColor: "#E2E8F0",
   },
@@ -265,39 +317,49 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "400",
     color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
+  viewAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   viewAllText: {
     color: "#48BB78",
     fontSize: 14,
     fontWeight: "600",
   },
-  journeyCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 16,
+  journeyCardContainer: {
     marginBottom: 16,
+    elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 4,
+  },
+  journeyCard: {
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "rgba(226, 232, 240, 0.5)",
   },
   journeyHeader: {
     marginBottom: 12,
   },
   journeyTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "500",
     color: "#2D3748",
     marginBottom: 4,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
   journeyDate: {
     fontSize: 12,
     color: "#A0AEC0",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
   journeyFooter: {
     flexDirection: "row",
@@ -306,23 +368,26 @@ const styles = StyleSheet.create({
   journeyStat: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   journeyStatText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#718096",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   emptyState: {
-    padding: 32,
+    padding: 40,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF",
-    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    borderRadius: 16,
     borderStyle: "dashed",
     borderWidth: 1,
     borderColor: "#CBD5E0",
   },
   emptyStateText: {
     color: "#A0AEC0",
+    fontStyle: "italic",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
 });

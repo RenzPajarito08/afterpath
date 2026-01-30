@@ -1,13 +1,16 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Bike, Footprints, Mountain } from "lucide-react-native";
+import { ArrowLeft, Bike, Footprints, Mountain } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  ImageBackground,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../navigation/types";
 
 type StartJourneyScreenNavigationProp = NativeStackNavigationProp<
@@ -21,12 +24,13 @@ interface Props {
 
 const ACTIVITIES = [
   { id: "walking", label: "Walking", icon: Footprints },
-  { id: "running", label: "Running", icon: Footprints }, // Reuse footprints or find a runner icon if available
+  { id: "running", label: "Running", icon: Footprints },
   { id: "cycling", label: "Cycling", icon: Bike },
   { id: "hiking", label: "Hiking", icon: Mountain },
 ];
 
 export default function StartJourneyScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [selectedActivity, setSelectedActivity] = useState("walking");
   const [title, setTitle] = useState("");
 
@@ -35,54 +39,80 @@ export default function StartJourneyScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerTitle}>Begin a new journey</Text>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Giving it a name? (Optional)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. Morning Walk to Clear My Head"
-          value={title}
-          onChangeText={setTitle}
-          placeholderTextColor="#A0AEC0"
-        />
-      </View>
-
-      <Text style={styles.label}>Select Activity</Text>
-      <View style={styles.activityGrid}>
-        {ACTIVITIES.map((activity) => {
-          const Icon = activity.icon;
-          const isSelected = selectedActivity === activity.id;
-          return (
-            <TouchableOpacity
-              key={activity.id}
-              style={[
-                styles.activityCard,
-                isSelected && styles.activityCardSelected,
-              ]}
-              onPress={() => setSelectedActivity(activity.id)}
-            >
-              <Icon size={24} color={isSelected ? "#FFF" : "#4A5568"} />
-              <Text
-                style={[
-                  styles.activityLabel,
-                  isSelected && styles.activityLabelSelected,
-                ]}
-              >
-                {activity.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-          <Text style={styles.startButtonText}>Start</Text>
+    <ImageBackground
+      source={require("../../assets/frieren_landscape.png")}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <View style={[styles.overlay, { paddingTop: Math.max(insets.top, 20) }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <ArrowLeft color="#F7F7F2" size={24} />
         </TouchableOpacity>
+
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Prepare for a Quest</Text>
+          <Text style={styles.headerSubtitle}>
+            Every journey begins with a name
+          </Text>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Name your chronicle (Optional)"
+            value={title}
+            onChangeText={setTitle}
+            placeholderTextColor="rgba(247, 247, 242, 0.6)"
+          />
+          <View style={styles.inputUnderline} />
+        </View>
+
+        <Text style={styles.label}>Choose your path</Text>
+        <View style={styles.activityGrid}>
+          {ACTIVITIES.map((activity) => {
+            const Icon = activity.icon;
+            const isSelected = selectedActivity === activity.id;
+            return (
+              <TouchableOpacity
+                key={activity.id}
+                style={styles.activityCardContainer}
+                onPress={() => setSelectedActivity(activity.id)}
+              >
+                <ImageBackground
+                  source={require("../../assets/parchment_texture.png")}
+                  style={styles.activityCard}
+                  imageStyle={[
+                    styles.cardParchment,
+                    isSelected && styles.cardParchmentSelected,
+                  ]}
+                >
+                  <Icon size={28} color={isSelected ? "#2F4F4F" : "#718096"} />
+                  <Text
+                    style={[
+                      styles.activityLabel,
+                      isSelected && styles.activityLabelSelected,
+                    ]}
+                  >
+                    {activity.label}
+                  </Text>
+                </ImageBackground>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View
+          style={[styles.footer, { marginBottom: Math.max(insets.bottom, 20) }]}
+        >
+          <TouchableOpacity style={styles.startButton} onPress={handleStart}>
+            <Text style={styles.startButtonText}>Begin Journey</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -90,78 +120,113 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F7F7F2",
-    padding: 24,
-    paddingTop: 60,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "300",
-    color: "#2D3748",
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    padding: 24,
+  },
+  backButton: {
+    marginBottom: 24,
+    width: 40,
+  },
+  header: {
     marginBottom: 40,
   },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "300",
+    color: "#F7F7F2",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    letterSpacing: 1,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#E2E8F0",
+    marginTop: 8,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
   inputContainer: {
-    marginBottom: 32,
+    marginBottom: 48,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#4A5568",
-    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#E2E8F0",
+    marginBottom: 16,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   input: {
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    color: "#2D3748",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    fontSize: 20,
+    color: "#F7F7F2",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    paddingVertical: 12,
+  },
+  inputUnderline: {
+    height: 1,
+    backgroundColor: "rgba(247, 247, 242, 0.5)",
+    marginTop: 4,
   },
   activityGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
   },
-  activityCard: {
-    width: "48%", // Approx 2 columns
-    backgroundColor: "#FFF",
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+  activityCardContainer: {
+    width: "48%",
+    aspectRatio: 1.2,
   },
-  activityCardSelected: {
-    backgroundColor: "#48BB78",
-    borderColor: "#48BB78",
+  activityCard: {
+    flex: 1,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+  },
+  cardParchment: {
+    borderRadius: 16,
+    opacity: 0.7,
+  },
+  cardParchmentSelected: {
+    opacity: 1,
+    borderWidth: 2,
+    borderColor: "#F7F7F2",
   },
   activityLabel: {
-    marginTop: 8,
-    color: "#4A5568",
+    marginTop: 12,
+    color: "#718096",
+    fontSize: 16,
     fontWeight: "500",
+    fontFamily: Platform.OS === "ios" ? "Optima-Medium" : "serif",
   },
   activityLabelSelected: {
-    color: "#FFF",
+    color: "#2D3748",
+    fontWeight: "700",
   },
   footer: {
     flex: 1,
     justifyContent: "flex-end",
-    marginBottom: 20,
   },
   startButton: {
-    backgroundColor: "#2D3748",
+    backgroundColor: "#F7F7F2",
     paddingVertical: 18,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   startButtonText: {
-    color: "#FFF",
+    color: "#2D3748",
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
 });
