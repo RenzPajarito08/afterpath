@@ -2,10 +2,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { format } from "date-fns";
 import React from "react";
 import {
+  ActivityIndicator,
+  FlatList,
   ImageBackground,
   Platform,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -26,7 +27,61 @@ interface Props {
 
 export default function TimelineScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { journeys, refreshing, onRefresh } = useTimelineLogic();
+  const { journeys, refreshing, loadingMore, hasMore, onRefresh, loadMore } =
+    useTimelineLogic();
+
+  const renderTimelineItem = ({ item: journey }: { item: any }) => (
+    <View style={styles.timelineItem}>
+      <View style={styles.nodeWrapper}>
+        <View style={styles.timelineDot} />
+        <View style={styles.dotInner} />
+      </View>
+
+      <TouchableOpacity
+        style={styles.cardContainer}
+        activeOpacity={0.7}
+        onPress={() =>
+          navigation.navigate("JourneyDetail", {
+            journeyId: journey.id,
+          })
+        }
+      >
+        <ImageBackground
+          source={require("../../assets/parchment_texture.png")}
+          style={styles.card}
+          imageStyle={styles.cardParchment}
+        >
+          <Text style={styles.date}>
+            {format(new Date(journey.start_time), "MMMM d, yyyy")}
+          </Text>
+          <Text style={styles.title}>{journey.title || "Untold Fragment"}</Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.distance}>
+              {(journey.distance_meters / 1000).toFixed(1)} km traveled
+            </Text>
+          </View>
+        </ImageBackground>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#48BB78" />
+        <Text style={styles.loaderText}>Unveiling more chronicles...</Text>
+      </View>
+    );
+  };
+
+  const renderEmpty = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateText}>
+        No chronicles found. Your journey is yet to begin.
+      </Text>
+    </View>
+  );
 
   return (
     <ImageBackground
@@ -39,62 +94,26 @@ export default function TimelineScreen({ navigation }: Props) {
         <Text style={styles.headerSubtitle}>Chronicles of your path</Text>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 40) },
-        ]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
+      <View style={styles.listContainer}>
         <View style={styles.timelineLine} />
-
-        {journeys.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No chronicles found. Your journey is yet to begin.
-            </Text>
-          </View>
-        ) : (
-          journeys.map((journey) => (
-            <View key={journey.id} style={styles.timelineItem}>
-              <View style={styles.nodeWrapper}>
-                <View style={styles.timelineDot} />
-                <View style={styles.dotInner} />
-              </View>
-
-              <TouchableOpacity
-                style={styles.cardContainer}
-                activeOpacity={0.7}
-                onPress={() =>
-                  navigation.navigate("JourneyDetail", {
-                    journeyId: journey.id,
-                  })
-                }
-              >
-                <ImageBackground
-                  source={require("../../assets/parchment_texture.png")}
-                  style={styles.card}
-                  imageStyle={styles.cardParchment}
-                >
-                  <Text style={styles.date}>
-                    {format(new Date(journey.start_time), "MMMM d, yyyy")}
-                  </Text>
-                  <Text style={styles.title}>
-                    {journey.title || "Untold Fragment"}
-                  </Text>
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.distance}>
-                      {(journey.distance_meters / 1000).toFixed(1)} km traveled
-                    </Text>
-                  </View>
-                </ImageBackground>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-      </ScrollView>
+        <FlatList
+          data={journeys}
+          renderItem={renderTimelineItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 40) },
+          ]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={!refreshing ? renderEmpty : null}
+          ListFooterComponent={renderFooter}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </ImageBackground>
   );
 }
@@ -123,9 +142,13 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
     marginTop: 4,
   },
+  listContainer: {
+    flex: 1,
+  },
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 10,
+    flexGrow: 1,
   },
   timelineLine: {
     position: "absolute",
@@ -225,6 +248,18 @@ const styles = StyleSheet.create({
     color: "#A0AEC0",
     fontStyle: "italic",
     textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: "center",
+    marginLeft: 40,
+  },
+  loaderText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#718096",
+    fontStyle: "italic",
     fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
 });
