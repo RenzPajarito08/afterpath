@@ -30,19 +30,22 @@ export const useHomeLogic = () => {
 
     try {
       // Fetch Stats
-      const { data: journeys, error } = await supabase
-        .from("journeys")
-        .select("distance_meters")
-        .eq("user_id", user.id);
+      const { data: statsData, error: statsError } = await supabase
+        .from("user_statistics")
+        .select("total_distance_meters, total_journeys")
+        .eq("user_id", user.id)
+        .single();
 
-      if (!error && journeys) {
-        const totalDist = journeys.reduce(
-          (acc, curr) => acc + (curr.distance_meters || 0),
-          0,
-        );
+      if (!statsError && statsData) {
         setStats({
-          totalDistance: totalDist,
-          totalJourneys: journeys.length,
+          totalDistance: statsData.total_distance_meters || 0,
+          totalJourneys: statsData.total_journeys || 0,
+        });
+      } else if (statsError && statsError.code === "PGRST116") {
+        // No stats found (new user), set defaults
+        setStats({
+          totalDistance: 0,
+          totalJourneys: 0,
         });
       }
 

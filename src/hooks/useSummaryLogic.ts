@@ -8,6 +8,7 @@ interface JourneyData {
   duration: number;
   coordinates: { latitude: number; longitude: number; timestamp?: number }[];
   activityType: string;
+  maxSpeed?: number;
 }
 
 export const useSummaryLogic = (navigation: any) => {
@@ -30,6 +31,7 @@ export const useSummaryLogic = (navigation: any) => {
           polyline: polylineString,
           memory_text: memory,
           activity_type: data.activityType,
+          max_speed: data.maxSpeed || 0,
           start_time: new Date(
             data.coordinates[0]?.timestamp || Date.now(),
           ).toISOString(),

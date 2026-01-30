@@ -22,7 +22,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
 
 export default function SummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { distance, duration, coordinates, activityType } = route.params;
+  const { distance, duration, coordinates, activityType, maxSpeed } =
+    route.params;
   const { memory, setMemory, saving, handleSave } = useSummaryLogic(navigation);
 
   // Wrap handleSave to pass the correct data
@@ -32,6 +33,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
       duration,
       coordinates,
       activityType,
+      maxSpeed,
     });
   };
 

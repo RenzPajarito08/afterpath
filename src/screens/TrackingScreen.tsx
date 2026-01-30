@@ -34,6 +34,8 @@ export default function TrackingScreen({ navigation, route }: Props) {
     currentLocation,
     togglePause,
     stopTracking,
+    speed,
+    maxSpeed,
   } = useJourneyTracker();
 
   // Animate map to new location
@@ -93,6 +95,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
                 duration,
                 coordinates: finalCoordinates,
                 activityType: activityType,
+                maxSpeed,
               });
             } catch (e) {
               console.log("Failed to end journey: ", e);
@@ -147,13 +150,25 @@ export default function TrackingScreen({ navigation, route }: Props) {
           resizeMode="cover"
         >
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{(distance / 1000).toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Distance (km)</Text>
+            <Text style={styles.unitText}>km</Text>
+            <Text style={styles.smallStatValue}>
+              {(distance / 1000).toFixed(2)}
+            </Text>
+            <Text style={styles.statLabel}>Distance</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{formatDuration(duration)}</Text>
-            <Text style={styles.statLabel}>Journey Time</Text>
+            <Text style={styles.unitText}>km/h</Text>
+            <Text style={styles.statValue}>{speed}</Text>
+            <Text style={styles.statLabel}>Avg Speed</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.unitText}>journey</Text>
+            <Text style={styles.smallStatValue}>
+              {formatDuration(duration)}
+            </Text>
+            <Text style={styles.statLabel}>Time</Text>
           </View>
         </ImageBackground>
 
@@ -233,19 +248,35 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    gap: 2,
   },
   statValue: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: "300",
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
     fontVariant: ["tabular-nums"],
   },
+  smallStatValue: {
+    fontSize: 20,
+    fontWeight: "300",
+    color: "#2D3748",
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+    fontVariant: ["tabular-nums"],
+  },
+  unitText: {
+    fontSize: 10,
+    color: "#718096",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+    textTransform: "lowercase",
+  },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#718096",
     textTransform: "uppercase",
-    letterSpacing: 2,
+    letterSpacing: 1,
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
   statDivider: {

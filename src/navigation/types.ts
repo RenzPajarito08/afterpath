@@ -10,6 +10,7 @@ export type RootStackParamList = {
     duration: number;
     coordinates: { latitude: number; longitude: number; timestamp: number }[];
     activityType: string;
+    maxSpeed?: number;
   };
   JourneyDetail: { journeyId: string };
   TimelineTab: undefined;
