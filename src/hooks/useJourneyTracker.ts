@@ -4,7 +4,7 @@ import { Alert, DeviceEventEmitter } from "react-native";
 import {
   LOCATION_TRACKING_TASK,
   LOCATION_UPDATED_EVENT,
-} from "../../lib/locationTasks";
+} from "../lib/locationTasks";
 
 export interface Coordinate {
   latitude: number;
