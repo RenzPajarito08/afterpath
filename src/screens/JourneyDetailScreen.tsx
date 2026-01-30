@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { format } from "date-fns";
 import { ArrowLeft, Clock, MapPin } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +26,19 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
   const { journeyId } = route.params;
   const { journey, loading } = useJourneyDetail(journeyId);
   const [init, setInit] = useState(false);
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (!loading && journey?.coordinates && journey.coordinates.length > 0) {
+      // Small delay to ensure map is ready
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(journey.coordinates, {
+          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+          animated: true,
+        });
+      }, 500);
+    }
+  }, [loading, journey]);
 
   useEffect(() => {
     if (!loading && journey && !init) {
@@ -58,6 +71,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
     <ScrollView style={styles.container} bounces={false}>
       <View style={styles.mapContainer}>
         <MapView
+          ref={mapRef}
           style={styles.map}
           provider={PROVIDER_DEFAULT}
           customMapStyle={retroMapStyle}
