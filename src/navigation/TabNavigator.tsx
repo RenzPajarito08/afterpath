@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Calendar, Home, User } from "lucide-react-native";
+import { Map, Scroll, User } from "lucide-react-native";
 import React from "react";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -14,15 +15,24 @@ export default function TabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#48BB78",
-        tabBarInactiveTintColor: "#A0AEC0",
+        tabBarActiveTintColor: "#2F4F4F", // Deep Forest Green
+        tabBarInactiveTintColor: "#8B7355", // Bronze/Parchment Brown
         tabBarStyle: {
-          borderTopWidth: 1,
-          borderTopColor: "#E2E8F0",
-          backgroundColor: "#FFF",
+          borderTopWidth: 2,
+          borderTopColor: "#8B7355", // Bronze border
+          backgroundColor: "#F7F7F2", // Parchment
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
+          elevation: 8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+          fontSize: 12,
         },
       }}
     >
@@ -30,18 +40,16 @@ export default function TabNavigator() {
         name="HomeTab"
         component={HomeScreen}
         options={{
-          tabBarLabel: "Home",
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarLabel: "Journey",
+          tabBarIcon: ({ color, size }) => <Map color={color} size={size} />,
         }}
       />
       <Tab.Screen
         name="TimelineTab"
         component={TimelineScreen}
         options={{
-          tabBarLabel: "Timeline",
-          tabBarIcon: ({ color, size }) => (
-            <Calendar color={color} size={size} />
-          ),
+          tabBarLabel: "Grimoire",
+          tabBarIcon: ({ color, size }) => <Scroll color={color} size={size} />,
         }}
       />
       <Tab.Screen

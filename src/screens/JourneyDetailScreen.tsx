@@ -16,6 +16,7 @@ import {
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useJourneyDetail } from "../hooks/useJourneyDetail";
+import { retroMapStyle } from "../lib/mapStyles";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "JourneyDetail">;
@@ -59,6 +60,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
         <MapView
           style={styles.map}
           provider={PROVIDER_DEFAULT}
+          customMapStyle={retroMapStyle}
           initialRegion={
             journey?.coordinates && journey.coordinates.length > 0
               ? {

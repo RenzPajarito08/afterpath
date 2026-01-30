@@ -14,6 +14,7 @@ import {
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDistance, useJourneyTracker } from "../hooks/useJourneyTracker";
+import { retroMapStyle } from "../lib/mapStyles";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Tracking">;
@@ -127,6 +128,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_DEFAULT}
+        customMapStyle={retroMapStyle}
         showsUserLocation
         followsUserLocation
       >
