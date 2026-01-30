@@ -15,55 +15,25 @@ import {
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { supabase } from "../lib/supabase";
+import { useJourneyDetail } from "../hooks/useJourneyDetail";
 import { RootStackParamList } from "../navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "JourneyDetail">;
 
-interface Journey {
-  id: string;
-  title: string;
-  distance_meters: number;
-  duration_seconds: number;
-  created_at: string;
-  start_time: string;
-  memory_text: string;
-  polyline: string;
-  coordinates?: { latitude: number; longitude: number }[];
-}
-
 export default function JourneyDetailScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { journeyId } = route.params;
-  const [journey, setJourney] = useState<Journey | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { journey, loading } = useJourneyDetail(journeyId);
+  const [init, setInit] = useState(false);
 
   useEffect(() => {
-    async function fetchJourney() {
-      const { data, error } = await supabase
-        .from("journeys")
-        .select("*")
-        .eq("id", journeyId)
-        .single();
-
-      if (error) {
-        Alert.alert("Error", "Could not load chronicle.");
-        navigation.goBack();
-        return;
-      }
-
-      if (data) {
-        try {
-          const coords = data.polyline ? JSON.parse(data.polyline) : [];
-          setJourney({ ...data, coordinates: coords });
-        } catch (e) {
-          setJourney({ ...data, coordinates: [] });
-        }
-      }
-      setLoading(false);
+    if (!loading && journey && !init) {
+      setInit(true);
+    } else if (!loading && !journey) {
+      Alert.alert("Error", "Could not load chronicle.");
+      navigation.goBack();
     }
-    fetchJourney();
-  }, [journeyId, navigation]);
+  }, [loading, journey, navigation]);
 
   if (loading || !journey) {
     return (
@@ -90,7 +60,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
           style={styles.map}
           provider={PROVIDER_DEFAULT}
           initialRegion={
-            journey.coordinates && journey.coordinates.length > 0
+            journey?.coordinates && journey.coordinates.length > 0
               ? {
                   latitude: journey.coordinates[0].latitude,
                   longitude: journey.coordinates[0].longitude,

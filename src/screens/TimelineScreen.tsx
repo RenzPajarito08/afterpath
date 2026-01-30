@@ -1,6 +1,6 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { format } from "date-fns";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ImageBackground,
   Platform,
@@ -12,8 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
+import { useTimelineLogic } from "../hooks/useTimelineLogic";
 import { RootStackParamList } from "../navigation/types";
 
 type TimelineScreenNavigationProp = NativeStackNavigationProp<
@@ -25,40 +24,9 @@ interface Props {
   navigation: TimelineScreenNavigationProp;
 }
 
-interface Journey {
-  id: string;
-  title: string;
-  distance_meters: number;
-  start_time: string;
-}
-
 export default function TimelineScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-  const [journeys, setJourneys] = useState<Journey[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  async function fetchJourneys() {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("journeys")
-      .select("id, title, distance_meters, start_time")
-      .eq("user_id", user.id)
-      .order("start_time", { ascending: false });
-
-    if (data) setJourneys(data);
-    setRefreshing(false);
-  }
-
-  useEffect(() => {
-    fetchJourneys();
-  }, [user]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchJourneys();
-  };
+  const { journeys, refreshing, onRefresh } = useTimelineLogic();
 
   return (
     <ImageBackground
