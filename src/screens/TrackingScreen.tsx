@@ -34,6 +34,8 @@ export default function TrackingScreen({ navigation, route }: Props) {
     currentLocation,
     togglePause,
     stopTracking,
+    speed,
+    maxSpeed,
   } = useJourneyTracker();
 
   // Animate map to new location
@@ -93,6 +95,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
                 duration,
                 coordinates: finalCoordinates,
                 activityType: activityType,
+                maxSpeed,
               });
             } catch (e) {
               console.log("Failed to end journey: ", e);
@@ -149,6 +152,11 @@ export default function TrackingScreen({ navigation, route }: Props) {
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{(distance / 1000).toFixed(2)}</Text>
             <Text style={styles.statLabel}>Distance (km)</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{speed}</Text>
+            <Text style={styles.statLabel}>Avg Speed (km/h)</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>

@@ -39,6 +39,7 @@ export const useJourneyTracker = () => {
   const [routeCoordinates, setRouteCoordinates] = useState<Coordinate[]>([]);
   const [distance, setDistance] = useState(0); // in meters
   const [duration, setDuration] = useState(0); // in seconds
+  const [maxSpeed, setMaxSpeed] = useState(0); // in meters/second
   const [currentLocation, setCurrentLocation] =
     useState<Location.LocationObject | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -116,6 +117,8 @@ export const useJourneyTracker = () => {
               );
               return prevCoords;
             }
+
+            setMaxSpeed((prev) => Math.max(prev, speed));
           }
 
           setDistance((d) => d + dist);
@@ -261,5 +264,8 @@ export const useJourneyTracker = () => {
     currentLocation,
     togglePause,
     stopTracking,
+    speed:
+      distance > 0 ? (distance / 1000 / (duration / 3600)).toFixed(2) : "0.00",
+    maxSpeed,
   };
 };
