@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Save, Trash2 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -25,6 +25,18 @@ export default function SummaryScreen({ navigation, route }: Props) {
   const { distance, duration, coordinates, activityType, maxSpeed } =
     route.params;
   const { memory, setMemory, saving, handleSave } = useSummaryLogic(navigation);
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (coordinates && coordinates.length > 0) {
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(coordinates, {
+          edgePadding: { top: 40, right: 40, bottom: 40, left: 40 },
+          animated: true,
+        });
+      }, 500);
+    }
+  }, [coordinates]);
 
   // Wrap handleSave to pass the correct data
   const onSave = () => {
@@ -61,6 +73,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
           <View style={styles.mapCardContainer}>
             <View style={styles.mapContainer}>
               <MapView
+                ref={mapRef}
                 style={styles.map}
                 scrollEnabled={false}
                 zoomEnabled={false}
