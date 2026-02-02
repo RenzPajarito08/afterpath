@@ -21,6 +21,7 @@ export const useProfileLogic = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const getProfile = useCallback(async () => {
     try {
@@ -30,7 +31,7 @@ export const useProfileLogic = () => {
       // Fetch Profile Data
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select(`username, first_name, last_name, created_at`)
+        .select(`username, first_name, last_name, created_at, avatar_url`)
         .eq("id", user.id)
         .single();
 
@@ -40,6 +41,7 @@ export const useProfileLogic = () => {
         setFirstName(profileData.first_name || "");
         setLastName(profileData.last_name || "");
         setUsername(profileData.username || "");
+        setAvatarUrl(profileData.avatar_url || "");
 
         // Format Active Since (Year)
         if (profileData.created_at || user.created_at) {
@@ -107,6 +109,7 @@ export const useProfileLogic = () => {
     firstName,
     lastName,
     username,
+    avatarUrl,
     stats,
     refreshing,
     onRefresh,

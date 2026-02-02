@@ -61,6 +61,7 @@ export default function ProfileScreen() {
     firstName,
     lastName,
     username,
+    avatarUrl,
     stats,
     refreshing,
     onRefresh,
@@ -118,7 +119,9 @@ export default function ProfileScreen() {
                 <View style={styles.avatarContainer}>
                   <Image
                     source={{
-                      uri: `https://api.dicebear.com/7.x/avataaars/png?seed=${user?.email}`,
+                      uri:
+                        avatarUrl ||
+                        `https://api.dicebear.com/7.x/avataaars/png?seed=${user?.email}`,
                     }}
                     style={styles.avatar}
                   />
