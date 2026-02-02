@@ -160,7 +160,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
           <View style={styles.statItem}>
             <Text style={styles.unitText}>km/h</Text>
             <Text style={styles.statValue}>{speed}</Text>
-            <Text style={styles.statLabel}>Avg Speed</Text>
+            <Text style={styles.statLabel}>Speed</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>

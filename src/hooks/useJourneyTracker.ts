@@ -51,6 +51,7 @@ export const useJourneyTracker = () => {
   );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastLocationTime = useRef<number>(0); // for decay
+  const latestInstantSpeed = useRef<number>(0); // latest GPS speed for real-time updates
 
   const MIN_DISTANCE_THRESHOLD = 8; // meters
   const MIN_ACCURACY_THRESHOLD = 12; // meters
@@ -147,10 +148,8 @@ export const useJourneyTracker = () => {
           // All filters passed → accept point
           setDistance((d) => d + dist);
           setMaxSpeed((prev) => Math.max(prev, instantSpeed));
-          setSmoothedSpeed(
-            (prev) =>
-              SMOOTHING_ALPHA * instantSpeed + (1 - SMOOTHING_ALPHA) * prev,
-          );
+          // Store instant speed for the timer to apply smoothing every second
+          latestInstantSpeed.current = instantSpeed;
           lastLocationTime.current = Date.now();
         }
 
@@ -278,11 +277,20 @@ export const useJourneyTracker = () => {
         const elapsed = Math.floor((now - startTime) / 1000);
         setDuration(accumulatedDuration + elapsed);
 
-        // Decay smoothed speed if no recent valid fixes
         const timeSinceLast = now - lastLocationTime.current;
+
+        // Decay speed if no recent valid fixes (stationary or no GPS)
         if (timeSinceLast > DECAY_THRESHOLD_MS) {
-          setSmoothedSpeed((prev) => prev * 0.95);
+          latestInstantSpeed.current = 0;
+          setSmoothedSpeed((prev) => prev * 0.85); // Faster decay when stationary
         }
+
+        // Apply smoothing every second for real-time speed updates
+        setSmoothedSpeed(
+          (prev) =>
+            SMOOTHING_ALPHA * latestInstantSpeed.current +
+            (1 - SMOOTHING_ALPHA) * prev,
+        );
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
