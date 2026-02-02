@@ -12,7 +12,7 @@ export interface Coordinate {
   timestamp: number;
 }
 
-const HAAVERSINE_R = 6371e3; // Earth radius in meters
+const HAVERSINE_R = 6371e3; // Earth radius in meters
 
 export function getDistance(coord1: Coordinate, coord2: Coordinate) {
   const lat1 = (coord1.latitude * Math.PI) / 180;
@@ -28,7 +28,7 @@ export function getDistance(coord1: Coordinate, coord2: Coordinate) {
       Math.sin(deltaLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  return HAAVERSINE_R * c;
+  return HAVERSINE_R * c;
 }
 
 export const useJourneyTracker = () => {
@@ -37,27 +37,31 @@ export const useJourneyTracker = () => {
   );
   const [isTracking, setIsTracking] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<Coordinate[]>([]);
-  const [distance, setDistance] = useState(0); // in meters
-  const [duration, setDuration] = useState(0); // in seconds
-  const [maxSpeed, setMaxSpeed] = useState(0); // in meters/second
+  const [distance, setDistance] = useState(0); // meters
+  const [duration, setDuration] = useState(0); // seconds
+  const [maxSpeed, setMaxSpeed] = useState(0); // m/s
+  const [smoothedSpeed, setSmoothedSpeed] = useState(0); // m/s, for display
   const [currentLocation, setCurrentLocation] =
     useState<Location.LocationObject | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [accumulatedDuration, setAccumulatedDuration] = useState(0); // in seconds
+  const [accumulatedDuration, setAccumulatedDuration] = useState(0);
 
   const locationSubscription = useRef<Location.LocationSubscription | null>(
     null,
   );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastLocationTime = useRef<number>(0); // for decay
 
-  const MIN_DISTANCE_THRESHOLD = 10; // meters
-  const MIN_ACCURACY_THRESHOLD = 15; // meters
-  const INITIAL_ACCURACY_THRESHOLD = 50; // meters
-  const MAX_SPEED_THRESHOLD = 35; // meters per second
+  const MIN_DISTANCE_THRESHOLD = 8; // meters
+  const MIN_ACCURACY_THRESHOLD = 12; // meters
+  const INITIAL_ACCURACY_THRESHOLD = 30; // meters, more lenient for first fix
+  const MAX_SPEED_THRESHOLD = 50; // m/s (~180 km/h, very safe)
+  const SPEED_DISCREPANCY_THRESHOLD = 7; // m/s (~25 km/h)
+  const SMOOTHING_ALPHA = 0.18; // lower = smoother, higher = more responsive
+  const DECAY_THRESHOLD_MS = 15000; // start decaying after 15s no valid fix
 
   const handleNewLocation = useCallback(
     (newLocation: Location.LocationObject) => {
-      // 1. Filter out points with poor accuracy
       setRouteCoordinates((prevCoords) => {
         const isFirstPoint = prevCoords.length === 0;
         const accuracyThreshold = isFirstPoint
@@ -69,13 +73,12 @@ export const useJourneyTracker = () => {
           newLocation.coords.accuracy > accuracyThreshold
         ) {
           console.log(
-            "Ignored point due to poor accuracy:",
-            newLocation.coords.accuracy,
-            "Threshold:",
-            accuracyThreshold,
+            `Ignored poor accuracy: ${newLocation.coords.accuracy}m > ${accuracyThreshold}m`,
           );
           return prevCoords;
         }
+
+        setCurrentLocation(newLocation);
 
         const { latitude, longitude } = newLocation.coords;
         const newCoord: Coordinate = {
@@ -84,11 +87,16 @@ export const useJourneyTracker = () => {
           timestamp: newLocation.timestamp,
         };
 
-        setCurrentLocation(newLocation);
-
         const lastCoord = prevCoords[prevCoords.length - 1];
+
+        // Timestamp ordering (defensive)
+        if (lastCoord && newCoord.timestamp <= lastCoord.timestamp) {
+          console.log("Ignored out-of-order timestamp");
+          return prevCoords;
+        }
+
         if (lastCoord) {
-          // 2. Filter out duplicate timestamps or identical coordinates
+          // Duplicate coordinate check
           if (
             lastCoord.latitude === newCoord.latitude &&
             lastCoord.longitude === newCoord.longitude
@@ -96,33 +104,56 @@ export const useJourneyTracker = () => {
             return prevCoords;
           }
 
-          // 3. Calculate distance and time delta
           const dist = getDistance(lastCoord, newCoord);
-          const timeDelta = (newCoord.timestamp - lastCoord.timestamp) / 1000; // seconds
+          const timeDelta = (newCoord.timestamp - lastCoord.timestamp) / 1000;
 
-          // 4. Filter out small movements (drift)
+          if (timeDelta <= 0) return prevCoords;
+
+          const calculatedSpeed = dist / timeDelta;
+
+          // Min distance filter (noise/drift)
           if (dist < MIN_DISTANCE_THRESHOLD) {
-            console.log("Ignored point due to small distance:", dist);
+            console.log(`Ignored small movement: ${dist.toFixed(1)}m`);
             return prevCoords;
           }
 
-          // 5. Speed Filter: Ignore impossible jumps
-          if (timeDelta > 0) {
-            const speed = dist / timeDelta;
-            if (speed > MAX_SPEED_THRESHOLD) {
+          // Provided speed cross-validation
+          let instantSpeed = calculatedSpeed;
+          if (
+            newLocation.coords.speed != null &&
+            newLocation.coords.speed >= 0
+          ) {
+            const providedSpeed = newLocation.coords.speed;
+            const discrepancy = Math.abs(providedSpeed - calculatedSpeed);
+            if (discrepancy > SPEED_DISCREPANCY_THRESHOLD) {
               console.log(
-                "Ignored point due to impossible speed:",
-                speed,
-                "m/s",
+                `Ignored speed discrepancy: calculated ${calculatedSpeed.toFixed(
+                  1,
+                )} m/s, provided ${providedSpeed.toFixed(1)} m/s`,
               );
               return prevCoords;
             }
-
-            setMaxSpeed((prev) => Math.max(prev, speed));
+            instantSpeed = providedSpeed; // prefer device-provided
           }
 
+          // Absolute speed sanity (uses calculated — catches impossible even if provided missing)
+          if (calculatedSpeed > MAX_SPEED_THRESHOLD) {
+            console.log(
+              `Ignored impossible speed: ${calculatedSpeed.toFixed(1)} m/s`,
+            );
+            return prevCoords;
+          }
+
+          // All filters passed → accept point
           setDistance((d) => d + dist);
+          setMaxSpeed((prev) => Math.max(prev, instantSpeed));
+          setSmoothedSpeed(
+            (prev) =>
+              SMOOTHING_ALPHA * instantSpeed + (1 - SMOOTHING_ALPHA) * prev,
+          );
+          lastLocationTime.current = Date.now();
         }
+
         return [...prevCoords, newCoord];
       });
     },
@@ -238,7 +269,7 @@ export const useJourneyTracker = () => {
       stopTracking();
       subscription.remove();
     };
-  }, []); // Empty dependency array as we want this to run once on mount
+  }, []);
 
   useEffect(() => {
     if (isTracking && startTime) {
@@ -246,10 +277,17 @@ export const useJourneyTracker = () => {
         const now = Date.now();
         const elapsed = Math.floor((now - startTime) / 1000);
         setDuration(accumulatedDuration + elapsed);
+
+        // Decay smoothed speed if no recent valid fixes
+        const timeSinceLast = now - lastLocationTime.current;
+        if (timeSinceLast > DECAY_THRESHOLD_MS) {
+          setSmoothedSpeed((prev) => prev * 0.95);
+        }
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
@@ -264,8 +302,7 @@ export const useJourneyTracker = () => {
     currentLocation,
     togglePause,
     stopTracking,
-    speed:
-      distance > 0 ? (distance / 1000 / (duration / 3600)).toFixed(2) : "0.00",
-    maxSpeed,
+    speed: (smoothedSpeed * 3.6).toFixed(2), // stable current speed in km/h
+    maxSpeed, // m/s, now cleaner
   };
 };
