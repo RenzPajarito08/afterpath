@@ -1,4 +1,4 @@
-export const uploadToCloudinary = async (uri: string) => {
+export const uploadToCloudinary = async (uri: string, userId: string) => {
   const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = "Afterpath"; // From user screenshot
 
@@ -14,7 +14,8 @@ export const uploadToCloudinary = async (uri: string) => {
     name: "upload.jpg",
   });
   formData.append("upload_preset", uploadPreset);
-  formData.append("folder", "afterpath/journey-images"); // From user screenshot
+  const shortUserId = userId.split("-")[0];
+  formData.append("folder", `afterpath/users/${shortUserId}/journey-images`);
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,

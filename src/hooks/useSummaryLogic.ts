@@ -50,7 +50,7 @@ export const useSummaryLogic = (navigation: any) => {
       try {
         // 1. Upload images to Cloudinary first
         const uploadedUrls = await Promise.all(
-          selectedImages.map((uri) => uploadToCloudinary(uri)),
+          selectedImages.map((uri) => uploadToCloudinary(uri, user.id)),
         );
 
         const polylineString = JSON.stringify(data.coordinates);
