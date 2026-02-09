@@ -53,13 +53,13 @@ export const useJourneyTracker = () => {
   const lastLocationTime = useRef<number>(0); // for decay
   const latestInstantSpeed = useRef<number>(0); // latest GPS speed for real-time updates
 
-  const MIN_DISTANCE_THRESHOLD = 8; // meters
+  const MIN_DISTANCE_THRESHOLD = 5; // meters (reduced from 8 for better slow-speed response)
   const MIN_ACCURACY_THRESHOLD = 12; // meters
   const INITIAL_ACCURACY_THRESHOLD = 30; // meters, more lenient for first fix
   const MAX_SPEED_THRESHOLD = 50; // m/s (~180 km/h, very safe)
   const SPEED_DISCREPANCY_THRESHOLD = 7; // m/s (~25 km/h)
-  const SMOOTHING_ALPHA = 0.18; // lower = smoother, higher = more responsive
-  const DECAY_THRESHOLD_MS = 15000; // start decaying after 15s no valid fix
+  const SMOOTHING_ALPHA = 0.25; // higher = more responsive, lower = smoother (increased from 0.18)
+  const DECAY_THRESHOLD_MS = 10000; // start decaying after 10s no valid fix (reduced from 15s)
 
   const handleNewLocation = useCallback(
     (newLocation: Location.LocationObject) => {
@@ -180,8 +180,8 @@ export const useJourneyTracker = () => {
     locationSubscription.current = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        distanceInterval: 5,
+        timeInterval: 1000,
+        distanceInterval: 3,
       },
       (newLocation) => {
         handleNewLocation(newLocation);
@@ -194,8 +194,8 @@ export const useJourneyTracker = () => {
     if (!isBackgroundStarted) {
       await Location.startLocationUpdatesAsync(LOCATION_TRACKING_TASK, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        distanceInterval: 5,
+        timeInterval: 1000,
+        distanceInterval: 3,
         foregroundService: {
           notificationTitle: "Navigating the Path",
           notificationBody:
