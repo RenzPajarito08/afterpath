@@ -1,11 +1,13 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, MapPin } from "lucide-react-native";
+import { ArrowLeft, Clock, MapPin, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -26,6 +28,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
   const { journeyId } = route.params;
   const { journey, loading } = useJourneyDetail(journeyId);
   const [init, setInit] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -68,99 +71,176 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
   };
 
   return (
-    <ScrollView style={styles.container} bounces={false}>
-      <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_DEFAULT}
-          customMapStyle={retroMapStyle}
-          initialRegion={
-            journey?.coordinates && journey.coordinates.length > 0
-              ? {
-                  latitude: journey.coordinates[0].latitude,
-                  longitude: journey.coordinates[0].longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }
-              : undefined
-          }
-          scrollEnabled={false}
-          zoomEnabled={false}
-        >
-          {journey.coordinates && (
-            <Polyline
-              coordinates={journey.coordinates}
-              strokeColor="#48BB78"
-              strokeWidth={4}
-            />
-          )}
-        </MapView>
-
-        <TouchableOpacity
-          style={[styles.backButton, { top: Math.max(insets.top, 10) }]}
-          onPress={() => navigation.goBack()}
-        >
-          <ArrowLeft color="#2D3748" size={24} />
-        </TouchableOpacity>
-      </View>
-
-      <ImageBackground
-        source={require("../../assets/parchment_texture.png")}
-        style={styles.contentParchment}
-        imageStyle={styles.parchmentImage}
-      >
-        <View style={styles.content}>
-          <Text style={styles.date}>
-            {format(new Date(journey.start_time), "MMMM do, yyyy")}
-          </Text>
-          <Text style={styles.title}>{journey.title || "Untold Fragment"}</Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <MapPin size={20} color="#718096" />
-              <View>
-                <Text style={styles.statValue}>
-                  {(journey.distance_meters / 1000).toFixed(2)} km
-                </Text>
-                <Text style={styles.statLabel}>Traversed</Text>
-              </View>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Clock size={20} color="#718096" />
-              <View>
-                <Text style={styles.statValue}>
-                  {formatDuration(journey.duration_seconds)}
-                </Text>
-                <Text style={styles.statLabel}>Duration</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.sectionHeader}>Enscribed Memory</Text>
-          <View style={styles.memoryContainer}>
-            <Text style={styles.memoryText}>
-              "{journey.memory_text || "No words were written for this day."}"
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.reflectionPrompt,
-              { marginBottom: Math.max(insets.bottom, 40) },
-            ]}
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container} bounces={false}>
+        <View style={styles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_DEFAULT}
+            customMapStyle={retroMapStyle}
+            initialRegion={
+              journey?.coordinates && journey.coordinates.length > 0
+                ? {
+                    latitude: journey.coordinates[0].latitude,
+                    longitude: journey.coordinates[0].longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }
+                : undefined
+            }
+            scrollEnabled={false}
+            zoomEnabled={false}
           >
-            <Text style={styles.promptText}>
-              A fragment of time from{" "}
-              {format(new Date(journey.start_time), "PP")}.
-            </Text>
-          </View>
+            {journey.coordinates && (
+              <Polyline
+                coordinates={journey.coordinates}
+                strokeColor="#48BB78"
+                strokeWidth={4}
+              />
+            )}
+          </MapView>
+
+          <TouchableOpacity
+            style={[styles.backButton, { top: Math.max(insets.top, 10) }]}
+            onPress={() => navigation.goBack()}
+          >
+            <ArrowLeft color="#2D3748" size={24} />
+          </TouchableOpacity>
         </View>
-      </ImageBackground>
-    </ScrollView>
+
+        <ImageBackground
+          source={require("../../assets/parchment_texture.png")}
+          style={styles.contentParchment}
+          imageStyle={styles.parchmentImage}
+        >
+          <View style={styles.content}>
+            <Text style={styles.date}>
+              {format(new Date(journey.start_time), "MMMM do, yyyy")}
+            </Text>
+            <Text style={styles.title}>
+              {journey.title || "Untold Fragment"}
+            </Text>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <MapPin size={20} color="#718096" />
+                <View>
+                  <Text style={styles.statValue}>
+                    {(journey.distance_meters / 1000).toFixed(2)} km
+                  </Text>
+                  <Text style={styles.statLabel}>Traversed</Text>
+                </View>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Clock size={20} color="#718096" />
+                <View>
+                  <Text style={styles.statValue}>
+                    {formatDuration(journey.duration_seconds)}
+                  </Text>
+                  <Text style={styles.statLabel}>Duration</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <Text style={styles.sectionHeader}>Enscribed Memory</Text>
+            <View style={styles.memoryContainer}>
+              <Text style={styles.memoryText}>
+                "{journey.memory_text || "No words were written for this day."}"
+              </Text>
+            </View>
+
+            {journey.journey_images && journey.journey_images.length > 0 && (
+              <>
+                <Text style={styles.sectionHeader}>Captured Moments</Text>
+                <View style={styles.scatterContainer}>
+                  {journey.journey_images.map((img, index) => {
+                    // Generate a "stable" random rotation between -5 and 5 degrees
+                    const rotation = ((index * 13) % 10) - 5;
+                    const offsetX = ((index * 7) % 20) - 10;
+
+                    return (
+                      <TouchableOpacity
+                        key={img.id}
+                        onPress={() => setSelectedImage(img.image_url)}
+                        style={[
+                          styles.polaroidWrapper,
+                          {
+                            transform: [
+                              { rotate: `${rotation}deg` },
+                              { translateX: offsetX },
+                            ],
+                            zIndex: index,
+                            marginTop: index === 0 ? 0 : -40, // Overlap effect
+                          },
+                        ]}
+                      >
+                        <ImageBackground
+                          source={require("../../assets/parchment_texture.png")}
+                          style={styles.polaroidParchment}
+                          imageStyle={styles.polaroidParchmentImage}
+                        >
+                          <View style={styles.polaroidFrame}>
+                            <Image
+                              source={{ uri: img.image_url }}
+                              style={styles.polaroidImage}
+                            />
+                          </View>
+                        </ImageBackground>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
+            <View
+              style={[
+                styles.reflectionPrompt,
+                { marginBottom: Math.max(insets.bottom, 40) },
+              ]}
+            >
+              <Text style={styles.promptText}>
+                A fragment of time from{" "}
+                {format(new Date(journey.start_time), "PP")}.
+              </Text>
+            </View>
+          </View>
+        </ImageBackground>
+      </ScrollView>
+
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedImage(null)}
+        >
+          <View style={styles.modalContent}>
+            {selectedImage && (
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.fullImage}
+                resizeMode="contain"
+              />
+            )}
+            <TouchableOpacity
+              style={[styles.closeModal, { top: Math.max(insets.top, 20) }]}
+              onPress={() => setSelectedImage(null)}
+            >
+              <X color="#F7F7F2" size={30} />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
 
@@ -304,5 +384,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: "italic",
     fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
+  },
+  scatterContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  polaroidWrapper: {
+    width: "85%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 15,
+  },
+  polaroidParchment: {
+    padding: 12,
+    paddingBottom: 40, // Polaroid bottom space
+  },
+  polaroidParchmentImage: {
+    borderRadius: 2,
+  },
+  polaroidFrame: {
+    backgroundColor: "#F7F7F2",
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+  },
+  polaroidImage: {
+    width: "100%",
+    aspectRatio: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+  },
+  closeModal: {
+    position: "absolute",
+    right: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    padding: 10,
+    borderRadius: 25,
   },
 });

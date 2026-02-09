@@ -12,6 +12,7 @@ interface Journey {
   memory_text: string;
   polyline: string;
   coordinates?: { latitude: number; longitude: number }[];
+  journey_images?: { id: string; image_url: string }[];
 }
 
 export const useJourneyDetail = (journeyId: string) => {
@@ -22,12 +23,21 @@ export const useJourneyDetail = (journeyId: string) => {
     async function fetchJourney() {
       const { data, error } = await supabase
         .from("journeys")
-        .select("*")
+        .select(
+          `
+          *,
+          journey_images (
+            id,
+            image_url
+          )
+        `,
+        )
         .eq("id", journeyId)
         .single();
 
       if (error) {
         Alert.alert("Error", "Could not load chronicle.");
+        setLoading(false);
         return;
       }
 
