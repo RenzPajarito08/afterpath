@@ -1,8 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Save, Trash2 } from "lucide-react-native";
+import { Camera, Save, Trash2, X } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Image,
   ImageBackground,
   Platform,
   StyleSheet,
@@ -24,7 +25,15 @@ export default function SummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { distance, duration, coordinates, activityType, maxSpeed } =
     route.params;
-  const { memory, setMemory, saving, handleSave } = useSummaryLogic(navigation);
+  const {
+    memory,
+    setMemory,
+    saving,
+    handleSave,
+    selectedImages,
+    pickImage,
+    removeImage,
+  } = useSummaryLogic(navigation);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -118,6 +127,32 @@ export default function SummaryScreen({ navigation, route }: Props) {
               textAlignVertical="top"
               placeholderTextColor="#A0AEC0"
             />
+
+            <Text style={styles.imageSectionTitle}>Captured Moments</Text>
+            <View style={styles.imageGrid}>
+              {selectedImages.map((uri, index) => (
+                <View key={index} style={styles.imageWrapper}>
+                  <Image source={{ uri }} style={styles.selectedImage} />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => removeImage(uri)}
+                  >
+                    <X size={12} color="#F7F7F2" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {selectedImages.length < 6 && (
+                <TouchableOpacity
+                  style={styles.addImageButton}
+                  onPress={pickImage}
+                >
+                  <Camera size={24} color="#2F4F4F" />
+                  <Text style={styles.addImageText}>
+                    {selectedImages.length}/6
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             <TouchableOpacity
               style={[styles.saveButton, saving && styles.disabledButton]}
@@ -230,13 +265,62 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.4)",
     borderRadius: 16,
     padding: 20,
-    height: 180,
+    height: 120, // Reduced height to fit images
     fontSize: 16,
     borderColor: "rgba(0,0,0,0.1)",
     borderWidth: 1,
-    marginBottom: 24,
+    marginBottom: 20,
     color: "#2D3748",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
+  imageSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2D3748",
+    marginBottom: 12,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  imageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 24,
+  },
+  imageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  selectedImage: {
+    width: "100%",
+    height: "100%",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 10,
+    padding: 4,
+  },
+  addImageButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    borderWidth: 1,
+    borderColor: "rgba(47, 79, 79, 0.2)",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addImageText: {
+    fontSize: 10,
+    color: "#2D3748",
+    marginTop: 4,
+    fontWeight: "600",
   },
   saveButton: {
     backgroundColor: "#2F4F4F",
