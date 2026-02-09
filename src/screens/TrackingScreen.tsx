@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getDistance, useJourneyTracker } from "../hooks/useJourneyTracker";
+import { useJourneyTracker } from "../hooks/useJourneyTracker";
+import { getDistance } from "../lib/geometry";
 import { retroMapStyle } from "../lib/mapStyles";
 import { RootStackParamList } from "../navigation/types";
 
