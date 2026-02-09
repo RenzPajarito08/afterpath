@@ -1,10 +1,11 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, DeviceEventEmitter } from "react-native";
+import { DeviceEventEmitter } from "react-native";
 import {
   LOCATION_TRACKING_TASK,
   LOCATION_UPDATED_EVENT,
 } from "../lib/locationTasks";
+import { showErrorAlert } from "../utils/alertHelper";
 
 export interface Coordinate {
   latitude: number;
@@ -32,38 +33,44 @@ export function getDistance(coord1: Coordinate, coord2: Coordinate) {
 }
 
 export const useJourneyTracker = () => {
-  const [locationPermission, setLocationPermission] = useState<boolean | null>(
-    null,
-  );
-  const [isTracking, setIsTracking] = useState(false);
-  const [routeCoordinates, setRouteCoordinates] = useState<Coordinate[]>([]);
-  const [distance, setDistance] = useState(0); // meters
-  const [duration, setDuration] = useState(0); // seconds
-  const [maxSpeed, setMaxSpeed] = useState(0); // m/s
-  const [smoothedSpeed, setSmoothedSpeed] = useState(0); // m/s, for display
-  const [currentLocation, setCurrentLocation] =
-    useState<Location.LocationObject | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [accumulatedDuration, setAccumulatedDuration] = useState(0);
+  const [status, setStatus] = useState({
+    locationPermission: null as boolean | null,
+    isTracking: false,
+    startTime: null as number | null,
+    accumulatedDuration: 0,
+  });
+
+  const [metrics, setMetrics] = useState({
+    distance: 0, // meters
+    duration: 0, // seconds
+    maxSpeed: 0, // m/s
+    smoothedSpeed: 0, // m/s
+  });
+
+  const [locationData, setLocationData] = useState({
+    routeCoordinates: [] as Coordinate[],
+    currentLocation: null as Location.LocationObject | null,
+  });
 
   const locationSubscription = useRef<Location.LocationSubscription | null>(
     null,
   );
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastLocationTime = useRef<number>(0); // for decay
-  const latestInstantSpeed = useRef<number>(0); // latest GPS speed for real-time updates
+  const lastLocationTime = useRef<number>(0);
+  const latestInstantSpeed = useRef<number>(0);
 
-  const MIN_DISTANCE_THRESHOLD = 5; // meters (reduced from 8 for better slow-speed response)
-  const MIN_ACCURACY_THRESHOLD = 12; // meters
-  const INITIAL_ACCURACY_THRESHOLD = 30; // meters, more lenient for first fix
-  const MAX_SPEED_THRESHOLD = 50; // m/s (~180 km/h, very safe)
-  const SPEED_DISCREPANCY_THRESHOLD = 7; // m/s (~25 km/h)
-  const SMOOTHING_ALPHA = 0.25; // higher = more responsive, lower = smoother (increased from 0.18)
-  const DECAY_THRESHOLD_MS = 10000; // start decaying after 10s no valid fix (reduced from 15s)
+  const MIN_DISTANCE_THRESHOLD = 5;
+  const MIN_ACCURACY_THRESHOLD = 12;
+  const INITIAL_ACCURACY_THRESHOLD = 30;
+  const MAX_SPEED_THRESHOLD = 50;
+  const SPEED_DISCREPANCY_THRESHOLD = 7;
+  const SMOOTHING_ALPHA = 0.25;
+  const DECAY_THRESHOLD_MS = 10000;
 
   const handleNewLocation = useCallback(
     (newLocation: Location.LocationObject) => {
-      setRouteCoordinates((prevCoords) => {
+      setLocationData((prev) => {
+        const prevCoords = prev.routeCoordinates;
         const isFirstPoint = prevCoords.length === 0;
         const accuracyThreshold = isFirstPoint
           ? INITIAL_ACCURACY_THRESHOLD
@@ -76,10 +83,8 @@ export const useJourneyTracker = () => {
           console.log(
             `Ignored poor accuracy: ${newLocation.coords.accuracy}m > ${accuracyThreshold}m`,
           );
-          return prevCoords;
+          return prev;
         }
-
-        setCurrentLocation(newLocation);
 
         const { latitude, longitude } = newLocation.coords;
         const newCoord: Coordinate = {
@@ -90,35 +95,31 @@ export const useJourneyTracker = () => {
 
         const lastCoord = prevCoords[prevCoords.length - 1];
 
-        // Timestamp ordering (defensive)
         if (lastCoord && newCoord.timestamp <= lastCoord.timestamp) {
           console.log("Ignored out-of-order timestamp");
-          return prevCoords;
+          return prev;
         }
 
         if (lastCoord) {
-          // Duplicate coordinate check
           if (
             lastCoord.latitude === newCoord.latitude &&
             lastCoord.longitude === newCoord.longitude
           ) {
-            return prevCoords;
+            return prev;
           }
 
           const dist = getDistance(lastCoord, newCoord);
           const timeDelta = (newCoord.timestamp - lastCoord.timestamp) / 1000;
 
-          if (timeDelta <= 0) return prevCoords;
+          if (timeDelta <= 0) return prev;
 
           const calculatedSpeed = dist / timeDelta;
 
-          // Min distance filter (noise/drift)
           if (dist < MIN_DISTANCE_THRESHOLD) {
             console.log(`Ignored small movement: ${dist.toFixed(1)}m`);
-            return prevCoords;
+            return prev;
           }
 
-          // Provided speed cross-validation
           let instantSpeed = calculatedSpeed;
           if (
             newLocation.coords.speed != null &&
@@ -132,44 +133,44 @@ export const useJourneyTracker = () => {
                   1,
                 )} m/s, provided ${providedSpeed.toFixed(1)} m/s`,
               );
-              return prevCoords;
+              return prev;
             }
-            instantSpeed = providedSpeed; // prefer device-provided
+            instantSpeed = providedSpeed;
           }
 
-          // Absolute speed sanity (uses calculated — catches impossible even if provided missing)
           if (calculatedSpeed > MAX_SPEED_THRESHOLD) {
             console.log(
               `Ignored impossible speed: ${calculatedSpeed.toFixed(1)} m/s`,
             );
-            return prevCoords;
+            return prev;
           }
 
-          // All filters passed → accept point
-          setDistance((d) => d + dist);
-          setMaxSpeed((prev) => Math.max(prev, instantSpeed));
-          // Store instant speed for the timer to apply smoothing every second
+          setMetrics((m) => ({
+            ...m,
+            distance: m.distance + dist,
+            maxSpeed: Math.max(m.maxSpeed, instantSpeed),
+          }));
           latestInstantSpeed.current = instantSpeed;
           lastLocationTime.current = Date.now();
         }
 
-        return [...prevCoords, newCoord];
+        return {
+          routeCoordinates: [...prevCoords, newCoord],
+          currentLocation: newLocation,
+        };
       });
     },
     [],
   );
 
   const startTracking = useCallback(async () => {
-    setIsTracking(true);
-    setStartTime(Date.now());
+    setStatus((prev) => ({ ...prev, isTracking: true, startTime: Date.now() }));
 
-    // OPTIMIZATION: Try to get the last known location immediately
     try {
       const lastKnown = await Location.getLastKnownPositionAsync({});
       if (lastKnown) {
         const timeDiff = Date.now() - lastKnown.timestamp;
         if (timeDiff < 2 * 60 * 1000) {
-          console.log("Using last known location for quick start");
           handleNewLocation(lastKnown);
         }
       }
@@ -177,84 +178,111 @@ export const useJourneyTracker = () => {
       console.log("Failed to get last known location", e);
     }
 
-    locationSubscription.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 1000,
-        distanceInterval: 3,
-      },
-      (newLocation) => {
-        handleNewLocation(newLocation);
-      },
-    );
-
-    const isBackgroundStarted = await Location.hasStartedLocationUpdatesAsync(
-      LOCATION_TRACKING_TASK,
-    );
-    if (!isBackgroundStarted) {
-      await Location.startLocationUpdatesAsync(LOCATION_TRACKING_TASK, {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 1000,
-        distanceInterval: 3,
-        foregroundService: {
-          notificationTitle: "Navigating the Path",
-          notificationBody:
-            "Afterpath is tracing your chronicle in the background",
-          notificationColor: "#2F4F4F",
+    try {
+      locationSubscription.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 1000,
+          distanceInterval: 3,
         },
-      });
+        (newLocation) => {
+          handleNewLocation(newLocation);
+        },
+      );
+
+      const isBackgroundStarted = await Location.hasStartedLocationUpdatesAsync(
+        LOCATION_TRACKING_TASK,
+      );
+      if (!isBackgroundStarted) {
+        await Location.startLocationUpdatesAsync(LOCATION_TRACKING_TASK, {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 1000,
+          distanceInterval: 3,
+          foregroundService: {
+            notificationTitle: "Navigating the Path",
+            notificationBody:
+              "Afterpath is tracing your chronicle in the background",
+            notificationColor: "#2F4F4F",
+          },
+        });
+      }
+    } catch (err: any) {
+      showErrorAlert(err.message, "Tracking Error");
     }
   }, [handleNewLocation]);
 
   const stopTracking = useCallback(async () => {
-    if (isTracking && startTime) {
-      const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000);
-      setAccumulatedDuration((prev) => prev + elapsed);
-      setDuration(accumulatedDuration + elapsed);
+    setStatus((prev) => {
+      const { isTracking, startTime, accumulatedDuration } = prev;
+      let newDuration = metrics.duration;
+      let newAcc = accumulatedDuration;
+
+      if (isTracking && startTime) {
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        newAcc = accumulatedDuration + elapsed;
+        newDuration = newAcc;
+      }
+
+      setMetrics((m) => ({ ...m, duration: newDuration }));
+
+      return {
+        ...prev,
+        isTracking: false,
+        startTime: null,
+        accumulatedDuration: newAcc,
+      };
+    });
+
+    try {
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
+      }
+      await Location.stopLocationUpdatesAsync(LOCATION_TRACKING_TASK);
+    } catch (e) {
+      console.error("Error stopping tracking:", e);
+    } finally {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
-    setIsTracking(false);
-    setStartTime(null);
-    if (locationSubscription.current) {
-      locationSubscription.current.remove();
-      locationSubscription.current = null;
-    }
-    await Location.stopLocationUpdatesAsync(LOCATION_TRACKING_TASK);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  }, [isTracking, startTime, accumulatedDuration]);
+  }, [metrics.duration]);
 
   const togglePause = useCallback(() => {
-    if (isTracking) {
+    if (status.isTracking) {
       stopTracking();
     } else {
       startTracking();
     }
-  }, [isTracking, stopTracking, startTracking]);
+  }, [status.isTracking, stopTracking, startTracking]);
 
   useEffect(() => {
     (async () => {
-      let { status: foregroundStatus } =
-        await Location.requestForegroundPermissionsAsync();
-      if (foregroundStatus !== "granted") {
-        Alert.alert("Permission to access location was denied");
-        setLocationPermission(false);
-        return;
-      }
+      try {
+        let { status: foregroundStatus } =
+          await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus !== "granted") {
+          showErrorAlert("Permission to access location was denied");
+          setStatus((prev) => ({ ...prev, locationPermission: false }));
+          return;
+        }
 
-      let { status: backgroundStatus } =
-        await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus !== "granted") {
-        Alert.alert(
-          "Background location permission denied",
-          "The app will only track your journey while it's in the foreground.",
-        );
-      }
+        let { status: backgroundStatus } =
+          await Location.requestBackgroundPermissionsAsync();
+        if (backgroundStatus !== "granted") {
+          showErrorAlert(
+            "Background location permission denied",
+            "The app will only track your journey while it's in the foreground.",
+          );
+        }
 
-      setLocationPermission(true);
-      startTracking();
+        setStatus((prev) => ({ ...prev, locationPermission: true }));
+        startTracking();
+      } catch (err: any) {
+        showErrorAlert(err.message);
+      }
     })();
 
     const subscription = DeviceEventEmitter.addListener(
@@ -271,26 +299,31 @@ export const useJourneyTracker = () => {
   }, []);
 
   useEffect(() => {
-    if (isTracking && startTime) {
+    if (status.isTracking && status.startTime) {
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const elapsed = Math.floor((now - startTime) / 1000);
-        setDuration(accumulatedDuration + elapsed);
+        const elapsed = Math.floor((now - (status.startTime || 0)) / 1000);
 
-        const timeSinceLast = now - lastLocationTime.current;
+        setMetrics((m) => {
+          const timeSinceLast = now - lastLocationTime.current;
+          let newSmoothed = m.smoothedSpeed;
+          let currentInstant = latestInstantSpeed.current;
 
-        // Decay speed if no recent valid fixes (stationary or no GPS)
-        if (timeSinceLast > DECAY_THRESHOLD_MS) {
-          latestInstantSpeed.current = 0;
-          setSmoothedSpeed((prev) => prev * 0.85); // Faster decay when stationary
-        }
+          if (timeSinceLast > DECAY_THRESHOLD_MS) {
+            currentInstant = 0;
+            newSmoothed = m.smoothedSpeed * 0.85;
+          }
 
-        // Apply smoothing every second for real-time speed updates
-        setSmoothedSpeed(
-          (prev) =>
-            SMOOTHING_ALPHA * latestInstantSpeed.current +
-            (1 - SMOOTHING_ALPHA) * prev,
-        );
+          newSmoothed =
+            SMOOTHING_ALPHA * currentInstant +
+            (1 - SMOOTHING_ALPHA) * newSmoothed;
+
+          return {
+            ...m,
+            duration: status.accumulatedDuration + elapsed,
+            smoothedSpeed: newSmoothed,
+          };
+        });
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -299,18 +332,18 @@ export const useJourneyTracker = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isTracking, startTime, accumulatedDuration]);
+  }, [status.isTracking, status.startTime, status.accumulatedDuration]);
 
   return {
-    locationPermission,
-    isTracking,
-    routeCoordinates,
-    distance,
-    duration,
-    currentLocation,
+    locationPermission: status.locationPermission,
+    isTracking: status.isTracking,
+    routeCoordinates: locationData.routeCoordinates,
+    distance: metrics.distance,
+    duration: metrics.duration,
+    currentLocation: locationData.currentLocation,
     togglePause,
     stopTracking,
-    speed: (smoothedSpeed * 3.6).toFixed(2), // stable current speed in km/h
-    maxSpeed, // m/s, now cleaner
+    speed: (metrics.smoothedSpeed * 3.6).toFixed(2),
+    maxSpeed: metrics.maxSpeed,
   };
 };
