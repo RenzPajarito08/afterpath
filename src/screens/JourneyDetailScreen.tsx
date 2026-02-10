@@ -216,6 +216,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
         visible={!!selectedImage}
         transparent={true}
         animationType="fade"
+        statusBarTranslucent={true}
         onRequestClose={() => setSelectedImage(null)}
       >
         <TouchableOpacity
