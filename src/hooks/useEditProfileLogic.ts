@@ -1,8 +1,8 @@
 import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import { showErrorAlert, showSuccessAlert } from "../utils/alertHelper";
 
 export const useEditProfileLogic = () => {
   const navigation = useNavigation();
@@ -10,9 +10,18 @@ export const useEditProfileLogic = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [birthday, setBirthday] = useState("");
+  const [profileData, setProfileData] = useState({
+    firstName: "",
+    lastName: "",
+    birthday: "",
+  });
+
+  const updateProfileField = (
+    field: keyof typeof profileData,
+    value: string,
+  ) => {
+    setProfileData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleBirthdayChange = useCallback((text: string) => {
     const numeric = text.replace(/[^0-9]/g, "");
@@ -26,7 +35,7 @@ export const useEditProfileLogic = () => {
         }
       }
     }
-    setBirthday(formatted);
+    updateProfileField("birthday", formatted);
   }, []);
 
   const getProfile = useCallback(async () => {
@@ -45,9 +54,11 @@ export const useEditProfileLogic = () => {
       }
 
       if (data) {
-        setFirstName(data.first_name || "");
-        setLastName(data.last_name || "");
-        setBirthday(data.birthday || "");
+        setProfileData({
+          firstName: data.first_name || "",
+          lastName: data.last_name || "",
+          birthday: data.birthday || "",
+        });
       }
     } catch (error: any) {
       console.log("Error loading profile", error.message);
@@ -63,9 +74,9 @@ export const useEditProfileLogic = () => {
 
       const updates = {
         id: user.id,
-        first_name: firstName,
-        last_name: lastName,
-        birthday: birthday || null,
+        first_name: profileData.firstName,
+        last_name: profileData.lastName,
+        birthday: profileData.birthday || null,
         updated_at: new Date(),
       };
 
@@ -75,14 +86,14 @@ export const useEditProfileLogic = () => {
         throw error;
       }
 
-      Alert.alert("Success", "Chronicle details updated.");
+      showSuccessAlert("Chronicle details updated.", "Success");
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      showErrorAlert(error.message);
     } finally {
       setSaving(false);
     }
-  }, [user, firstName, lastName, birthday, navigation]);
+  }, [user, profileData, navigation]);
 
   useEffect(() => {
     if (user) {
@@ -93,11 +104,10 @@ export const useEditProfileLogic = () => {
   return {
     loading,
     saving,
-    firstName,
-    setFirstName,
-    lastName,
-    setLastName,
-    birthday,
+    ...profileData,
+    setFirstName: (val: string) => updateProfileField("firstName", val),
+    setLastName: (val: string) => updateProfileField("lastName", val),
+    birthday: profileData.birthday,
     handleBirthdayChange,
     updateProfile,
   };

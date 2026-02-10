@@ -2,6 +2,7 @@ import { useIsFocused } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import { showErrorAlert } from "../utils/alertHelper";
 
 export const useProfileLogic = () => {
   const { user } = useAuth();
@@ -18,15 +19,18 @@ export const useProfileLogic = () => {
     activeSince: "",
   });
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
+    avatarUrl: "",
+  });
 
   const getProfile = useCallback(async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
-      if (!user) throw new Error("No user on the session!");
 
       // Fetch Profile Data
       const { data: profileData, error: profileError } = await supabase
@@ -38,10 +42,12 @@ export const useProfileLogic = () => {
       if (profileError) throw profileError;
 
       if (profileData) {
-        setFirstName(profileData.first_name || "");
-        setLastName(profileData.last_name || "");
-        setUsername(profileData.username || "");
-        setAvatarUrl(profileData.avatar_url || "");
+        setUserData({
+          firstName: profileData.first_name || "",
+          lastName: profileData.last_name || "",
+          username: profileData.username || "",
+          avatarUrl: profileData.avatar_url || "",
+        });
 
         // Format Active Since (Year)
         if (profileData.created_at || user.created_at) {
@@ -86,6 +92,7 @@ export const useProfileLogic = () => {
       }
     } catch (error: any) {
       console.log("Error loading profile", error.message);
+      showErrorAlert(error.message, "Load Error");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -106,10 +113,7 @@ export const useProfileLogic = () => {
   return {
     user,
     loading,
-    firstName,
-    lastName,
-    username,
-    avatarUrl,
+    ...userData,
     stats,
     refreshing,
     onRefresh,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import { showErrorAlert } from "../utils/alertHelper";
 
 interface Journey {
   id: string;
@@ -14,10 +15,16 @@ const PAGE_SIZE = 10;
 export const useTimelineLogic = () => {
   const { user } = useAuth();
   const [journeys, setJourneys] = useState<Journey[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
+  const [paginationState, setPaginationState] = useState({
+    refreshing: false,
+    loadingMore: false,
+    hasMore: true,
+    page: 0,
+  });
+
+  const updatePagination = (updates: Partial<typeof paginationState>) => {
+    setPaginationState((prev) => ({ ...prev, ...updates }));
+  };
 
   const fetchJourneys = useCallback(
     async (pageNum: number, isRefreshing = false) => {
@@ -42,33 +49,31 @@ export const useTimelineLogic = () => {
           } else {
             setJourneys((prev) => [...prev, ...data]);
           }
-          setHasMore(data.length === PAGE_SIZE);
+          updatePagination({ hasMore: data.length === PAGE_SIZE });
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Error fetching timeline:", e);
+        showErrorAlert(e.message || "Failed to fetch journeys");
       } finally {
-        setRefreshing(false);
-        setLoadingMore(false);
+        updatePagination({ refreshing: false, loadingMore: false });
       }
     },
     [user],
   );
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setPage(0);
-    setHasMore(true);
+    updatePagination({ refreshing: true, page: 0, hasMore: true });
     fetchJourneys(0, true);
   }, [fetchJourneys]);
 
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
+    if (paginationState.loadingMore || !paginationState.hasMore) return;
 
-    setLoadingMore(true);
-    const nextPage = page + 1;
-    setPage(nextPage);
+    updatePagination({ loadingMore: true });
+    const nextPage = paginationState.page + 1;
+    updatePagination({ page: nextPage });
     fetchJourneys(nextPage);
-  }, [loadingMore, hasMore, page, fetchJourneys]);
+  }, [paginationState, fetchJourneys]);
 
   useEffect(() => {
     fetchJourneys(0, true);
@@ -76,9 +81,7 @@ export const useTimelineLogic = () => {
 
   return {
     journeys,
-    refreshing,
-    loadingMore,
-    hasMore,
+    ...paginationState,
     onRefresh,
     loadMore,
     refetch: onRefresh,

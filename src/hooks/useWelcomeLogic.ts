@@ -1,81 +1,90 @@
 import { useCallback, useState } from "react";
-import { Alert } from "react-native";
 import { supabase } from "../lib/supabase";
+import { showErrorAlert, showSuccessAlert } from "../utils/alertHelper";
+import { validatePasswordMatch, validateUsername } from "../utils/validation";
 
 export const useWelcomeLogic = () => {
-  const [emailOrUsername, setEmailOrUsername] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    emailOrUsername: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const signIn = useCallback(async () => {
+    const { emailOrUsername, password } = formData;
     const trimmedInput = emailOrUsername.trim();
+
     if (!trimmedInput || !password) {
-      Alert.alert("Error", "Please fill in all fields");
+      showErrorAlert("Please fill in all fields");
       return;
     }
 
     setLoading(true);
     let loginEmail = trimmedInput;
 
-    // Resolve username to email if it doesn't look like an email
-    if (!trimmedInput.includes("@")) {
-      try {
+    try {
+      // Resolve username to email if it doesn't look like an email
+      if (!trimmedInput.includes("@")) {
         const { data, error: rpcError } = await supabase.rpc(
           "get_email_by_username",
-          {
-            lookup_username: trimmedInput,
-          },
+          { lookup_username: trimmedInput },
         );
 
         if (rpcError) throw rpcError;
         if (!data) {
-          Alert.alert("Error", "Username not found");
-          setLoading(false);
+          showErrorAlert("Username not found");
           return;
         }
         loginEmail = data;
-      } catch (err: any) {
-        Alert.alert("Error", "Failed to resolve username");
-        setLoading(false);
-        return;
       }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: password,
+      });
+
+      if (error) {
+        showErrorAlert(error.message, "Login Failed");
+      }
+    } catch (err: any) {
+      showErrorAlert(err.message || "Failed to resolve username");
+    } finally {
+      setLoading(false);
     }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: password,
-    });
-
-    if (error) Alert.alert("Login Failed", error.message);
-    setLoading(false);
-  }, [emailOrUsername, password]);
+  }, [formData]);
 
   const signUp = useCallback(async () => {
+    const { username, emailOrUsername, password, confirmPassword } = formData;
     const trimmedUsername = username.trim();
     const trimmedEmail = emailOrUsername.trim();
 
     if (!trimmedUsername || !trimmedEmail || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields");
+      showErrorAlert("Please fill in all fields");
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+    if (!validatePasswordMatch(password, confirmPassword)) {
+      showErrorAlert("Passwords do not match");
       return;
     }
 
-    if (trimmedUsername.length < 3) {
-      Alert.alert("Error", "Username must be at least 3 characters");
+    const usernameError = validateUsername(trimmedUsername);
+    if (usernameError) {
+      showErrorAlert(usernameError);
       return;
     }
 
     setLoading(true);
 
-    // Check if username is already taken
     try {
+      // Check if username is already taken
       const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
         .select("username")
@@ -84,58 +93,48 @@ export const useWelcomeLogic = () => {
 
       if (checkError) throw checkError;
       if (existingUser) {
-        Alert.alert(
-          "Error",
-          "This username is already claimed by another seeker.",
-        );
-        setLoading(false);
+        showErrorAlert("This username is already claimed by another seeker.");
         return;
       }
-    } catch (err: any) {
-      console.error("Username check failed", err);
-      // We continue anyway, but the pre-check is better UX
-    }
 
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password: password,
-      options: {
-        data: {
-          username: trimmedUsername,
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password: password,
+        options: {
+          data: {
+            username: trimmedUsername,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      Alert.alert("Signup Failed", error.message);
+      if (error) {
+        showErrorAlert(error.message, "Signup Failed");
+        return;
+      }
+
+      if (session?.user) {
+        showSuccessAlert(
+          "Welcome to the fellowship! Please verify your email.",
+        );
+      } else {
+        showSuccessAlert("Please check your inbox for email verification!");
+      }
+    } catch (err: any) {
+      showErrorAlert(err.message || "Signup failed unexpectedly");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (session?.user) {
-      Alert.alert(
-        "Success",
-        "Welcome to the fellowship! Please verify your email.",
-      );
-    } else {
-      Alert.alert("Success", "Please check your inbox for email verification!");
-    }
-
-    setLoading(false);
-  }, [username, emailOrUsername, password, confirmPassword]);
+  }, [formData]);
 
   return {
-    emailOrUsername,
-    setEmailOrUsername,
-    username,
-    setUsername,
-    password,
-    setPassword,
-    confirmPassword,
-    setConfirmPassword,
+    ...formData,
+    setEmailOrUsername: (val: string) => updateField("emailOrUsername", val),
+    setUsername: (val: string) => updateField("username", val),
+    setPassword: (val: string) => updateField("password", val),
+    setConfirmPassword: (val: string) => updateField("confirmPassword", val),
     loading,
     isLogin,
     setIsLogin,
