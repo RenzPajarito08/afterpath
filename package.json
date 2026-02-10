@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.93.1",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
+    "expo-image-picker": "~17.0.10",
     "expo-location": "^19.0.8",
     "expo-secure-store": "^15.0.8",
     "expo-status-bar": "~3.0.9",
