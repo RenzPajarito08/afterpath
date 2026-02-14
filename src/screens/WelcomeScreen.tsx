@@ -41,6 +41,8 @@ export default function WelcomeScreen({ navigation }: Props) {
     setIsLogin,
     signIn,
     signUp,
+    errors,
+    formError,
   } = useWelcomeLogic();
 
   return (
@@ -82,65 +84,127 @@ export default function WelcomeScreen({ navigation }: Props) {
           >
             <View style={styles.inputSection}>
               {!isLogin && (
-                <View style={styles.inputWrapper}>
-                  <UserPlus
+                <View style={styles.inputContainer}>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      errors.username && styles.inputWrapperError,
+                    ]}
+                  >
+                    <UserPlus
+                      size={20}
+                      color={errors.username ? "#E53E3E" : "#718096"}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Chosen Username"
+                      placeholderTextColor="#A0AEC0"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                    />
+                  </View>
+                  {errors.username ? (
+                    <Text style={styles.errorText}>{errors.username}</Text>
+                  ) : null}
+                </View>
+              )}
+
+              <View style={styles.inputContainer}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.emailOrUsername && styles.inputWrapperError,
+                  ]}
+                >
+                  <Mail
                     size={20}
-                    color="#718096"
+                    color={errors.emailOrUsername ? "#E53E3E" : "#718096"}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Chosen Username"
+                    placeholder={
+                      isLogin ? "Email or Username" : "Sanctuary Email"
+                    }
                     placeholderTextColor="#A0AEC0"
-                    value={username}
-                    onChangeText={setUsername}
+                    value={emailOrUsername}
+                    onChangeText={setEmailOrUsername}
                     autoCapitalize="none"
+                    keyboardType={isLogin ? "default" : "email-address"}
                   />
                 </View>
-              )}
-
-              <View style={styles.inputWrapper}>
-                <Mail size={20} color="#718096" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder={
-                    isLogin ? "Email or Username" : "Sanctuary Email"
-                  }
-                  placeholderTextColor="#A0AEC0"
-                  value={emailOrUsername}
-                  onChangeText={setEmailOrUsername}
-                  autoCapitalize="none"
-                  keyboardType={isLogin ? "default" : "email-address"}
-                />
+                {errors.emailOrUsername ? (
+                  <Text style={styles.errorText}>{errors.emailOrUsername}</Text>
+                ) : null}
               </View>
 
-              <View style={styles.inputWrapper}>
-                <Lock size={20} color="#718096" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder={isLogin ? "Secret Phrase" : "New Secret Phrase"}
-                  placeholderTextColor="#A0AEC0"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                />
-              </View>
-
-              {!isLogin && (
-                <View style={styles.inputWrapper}>
-                  <Lock size={20} color="#718096" style={styles.inputIcon} />
+              <View style={styles.inputContainer}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.password && styles.inputWrapperError,
+                  ]}
+                >
+                  <Lock
+                    size={20}
+                    color={errors.password ? "#E53E3E" : "#718096"}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
-                    placeholder="Confirm Secret Phrase"
+                    placeholder={
+                      isLogin ? "Secret Phrase" : "New Secret Phrase"
+                    }
                     placeholderTextColor="#A0AEC0"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    value={password}
+                    onChangeText={setPassword}
                     secureTextEntry
                     autoCapitalize="none"
                   />
                 </View>
+                {errors.password ? (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                ) : null}
+              </View>
+
+              {!isLogin && (
+                <View style={styles.inputContainer}>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      errors.confirmPassword && styles.inputWrapperError,
+                    ]}
+                  >
+                    <Lock
+                      size={20}
+                      color={errors.confirmPassword ? "#E53E3E" : "#718096"}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Confirm Secret Phrase"
+                      placeholderTextColor="#A0AEC0"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  </View>
+                  {errors.confirmPassword ? (
+                    <Text style={styles.errorText}>
+                      {errors.confirmPassword}
+                    </Text>
+                  ) : null}
+                </View>
               )}
+
+              {formError ? (
+                <View style={styles.formErrorContainer}>
+                  <Text style={styles.formErrorText}>{formError}</Text>
+                </View>
+              ) : null}
 
               <TouchableOpacity
                 style={styles.primaryButton}
@@ -166,7 +230,7 @@ export default function WelcomeScreen({ navigation }: Props) {
           </ImageBackground>
 
           <TouchableOpacity
-            onPress={() => setIsLogin(!isLogin)}
+            onPress={() => setIsLogin()}
             style={styles.switchButton}
           >
             <Text style={styles.switchText}>
@@ -295,5 +359,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: "underline",
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
+  inputContainer: {
+    gap: 4,
+  },
+  inputWrapperError: {
+    borderBottomColor: "#E53E3E",
+  },
+  errorText: {
+    color: "#E53E3E",
+    fontSize: 12,
+    marginTop: -4,
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
+  formErrorContainer: {
+    backgroundColor: "rgba(229, 62, 62, 0.1)",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "rgba(229, 62, 62, 0.2)",
+  },
+  formErrorText: {
+    color: "#E53E3E",
+    fontSize: 14,
+    textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "Optima-Medium" : "serif",
   },
 });

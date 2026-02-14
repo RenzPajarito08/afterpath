@@ -1,8 +1,9 @@
 import { differenceInYears, isFuture, isValid, parse } from "date-fns";
 
-export const validateEmail = (email: string): boolean => {
+export const validateEmail = (email: string): string | null => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (!email) return "Email is required";
+  return emailRegex.test(email) ? null : "Invalid email format";
 };
 
 export const validateUsername = (username: string): string | null => {
