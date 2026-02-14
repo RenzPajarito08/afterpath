@@ -14,6 +14,8 @@ create table public.journeys (
   polyline text, -- Encoded route string
   memory_text text, -- "What stayed with you..."
   tags text[], -- Array of strings for emotion tags
+  max_speed float default 0,
+  average_speed float default 0,
   last_viewed_at timestamp with time zone default now(),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

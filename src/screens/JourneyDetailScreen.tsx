@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, MapPin, X } from "lucide-react-native";
+import { ArrowLeft, Clock, MapPin, Watch, X, Zap } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -119,31 +119,52 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
           imageStyle={styles.parchmentImage}
         >
           <View style={styles.content}>
-            <Text style={styles.date}>
-              {format(new Date(journey.start_time), "MMMM do, yyyy")}
-            </Text>
             <Text style={styles.title}>
               {journey.title || "Untold Fragment"}
             </Text>
 
             <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <MapPin size={20} color="#718096" />
-                <View>
-                  <Text style={styles.statValue}>
-                    {(journey.distance_meters / 1000).toFixed(2)} km
-                  </Text>
-                  <Text style={styles.statLabel}>Traversed</Text>
+              <View style={styles.statContainer}>
+                <View style={styles.statItem}>
+                  <MapPin size={18} color="#718096" />
+                  <View>
+                    <Text style={styles.statValue}>
+                      {(journey.distance_meters / 1000).toFixed(2)} km
+                    </Text>
+                    <Text style={styles.statLabel}>Traversed</Text>
+                  </View>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Clock size={18} color="#718096" />
+                  <View>
+                    <Text style={styles.statValue}>
+                      {formatDuration(journey.duration_seconds)}
+                    </Text>
+                    <Text style={styles.statLabel}>Duration</Text>
+                  </View>
                 </View>
               </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Clock size={20} color="#718096" />
-                <View>
-                  <Text style={styles.statValue}>
-                    {formatDuration(journey.duration_seconds)}
-                  </Text>
-                  <Text style={styles.statLabel}>Duration</Text>
+
+              <View style={[styles.statContainer, { marginTop: 12 }]}>
+                <View style={styles.statItem}>
+                  <Zap size={18} color="#718096" />
+                  <View>
+                    <Text style={styles.statValue}>
+                      {(journey.average_speed || 0).toFixed(1)} km/h
+                    </Text>
+                    <Text style={styles.statLabel}>Avg Speed</Text>
+                  </View>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Watch size={18} color="#718096" />
+                  <View>
+                    <Text style={styles.statValue}>
+                      {((journey.max_speed || 0) * 3.6).toFixed(1)} km/h
+                    </Text>
+                    <Text style={styles.statLabel}>Max Speed</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -320,9 +341,8 @@ const styles = StyleSheet.create({
     lineHeight: 40,
   },
   statsRow: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "rgba(255,255,255,0.4)",
     padding: 20,
     borderRadius: 16,
@@ -330,10 +350,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(226, 232, 240, 0.5)",
   },
+  statContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    flex: 1,
   },
   statValue: {
     fontSize: 18,
