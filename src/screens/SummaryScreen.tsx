@@ -60,7 +60,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
 
   return (
     <ImageBackground
-      source={require("../../assets/frieren_landscape.png")}
+      source={require("../../assets/landscape.png")}
       style={styles.container}
     >
       <View style={styles.overlay}>

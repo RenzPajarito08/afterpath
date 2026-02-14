@@ -45,7 +45,7 @@ export default function WelcomeScreen({ navigation }: Props) {
 
   return (
     <ImageBackground
-      source={require("../../assets/frieren_landscape.png")}
+      source={require("../../assets/landscape.png")}
       style={styles.container}
       resizeMode="cover"
     >
