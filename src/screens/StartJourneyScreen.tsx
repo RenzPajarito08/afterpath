@@ -1,5 +1,12 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ArrowLeft, Bike, Footprints, Mountain } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Bike,
+  Footprints,
+  HelpCircle,
+  Map as MapIcon,
+  Mountain,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ImageBackground,
@@ -10,7 +17,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CustomInputModal } from "../components/CustomInputModal";
 import { RootStackParamList } from "../navigation/types";
 
 type StartJourneyScreenNavigationProp = NativeStackNavigationProp<
@@ -27,6 +36,8 @@ const ACTIVITIES = [
   { id: "running", label: "Running", icon: Footprints },
   { id: "cycling", label: "Cycling", icon: Bike },
   { id: "hiking", label: "Hiking", icon: Mountain },
+  { id: "traveling", label: "Traveling", icon: MapIcon },
+  { id: "others", label: "Others", icon: HelpCircle },
 ];
 
 export default function StartJourneyScreen({ navigation }: Props) {
@@ -34,16 +45,34 @@ export default function StartJourneyScreen({ navigation }: Props) {
   const [selectedActivity, setSelectedActivity] = useState("walking");
   const [title, setTitle] = useState("");
   const [hasAttemptedStart, setHasAttemptedStart] = useState(false);
+  const [customActivity, setCustomActivity] = useState("");
+  const [showOtherModal, setShowOtherModal] = useState(false);
 
   const handleStart = () => {
     setHasAttemptedStart(true);
     if (!title.trim()) {
       return;
     }
+
+    const activityType =
+      selectedActivity === "others" ? customActivity : selectedActivity;
+
+    if (selectedActivity === "others" && !customActivity) {
+      setShowOtherModal(true);
+      return;
+    }
+
     navigation.navigate("Tracking", {
-      activityType: selectedActivity,
+      activityType: activityType,
       title: title.trim(),
     });
+  };
+
+  const handleActivitySelect = (activityId: string) => {
+    setSelectedActivity(activityId);
+    if (activityId === "others") {
+      setShowOtherModal(true);
+    }
   };
 
   return (
@@ -52,7 +81,18 @@ export default function StartJourneyScreen({ navigation }: Props) {
       style={styles.container}
       resizeMode="cover"
     >
-      <View style={[styles.overlay, { paddingTop: Math.max(insets.top, 20) }]}>
+      <KeyboardAwareScrollView
+        style={styles.keyboardView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: Math.max(insets.top, 20) },
+        ]}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
+        showsVerticalScrollIndicator={false}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -101,7 +141,7 @@ export default function StartJourneyScreen({ navigation }: Props) {
               <TouchableOpacity
                 key={activity.id}
                 style={styles.activityCardContainer}
-                onPress={() => setSelectedActivity(activity.id)}
+                onPress={() => handleActivitySelect(activity.id)}
               >
                 <ImageBackground
                   source={require("../../assets/parchment_texture.png")}
@@ -118,7 +158,9 @@ export default function StartJourneyScreen({ navigation }: Props) {
                       isSelected && styles.activityLabelSelected,
                     ]}
                   >
-                    {activity.label}
+                    {activity.id === "others" && customActivity
+                      ? customActivity
+                      : activity.label}
                   </Text>
                 </ImageBackground>
               </TouchableOpacity>
@@ -133,7 +175,17 @@ export default function StartJourneyScreen({ navigation }: Props) {
             <Text style={styles.startButtonText}>Begin Journey</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
+
+      <CustomInputModal
+        visible={showOtherModal}
+        onClose={() => setShowOtherModal(false)}
+        onConfirm={(val) => {
+          setCustomActivity(val);
+          setShowOtherModal(false);
+        }}
+        initialValue={customActivity}
+      />
     </ImageBackground>
   );
 }
@@ -143,17 +195,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F7F7F2",
   },
-  overlay: {
+  keyboardView: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  scrollContent: {
     padding: 24,
+    flexGrow: 1,
   },
   backButton: {
     marginBottom: 24,
     width: 40,
   },
   header: {
-    marginBottom: 40,
+    marginBottom: 24,
   },
   headerTitle: {
     fontSize: 32,
@@ -229,7 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   footer: {
-    flex: 1,
+    marginTop: 32,
     justifyContent: "flex-end",
   },
   startButton: {
