@@ -4,8 +4,17 @@ export const validateEmail = (email: string): boolean => {
 };
 
 export const validateUsername = (username: string): string | null => {
-  if (username.length < 3) {
-    return "Username must be at least 3 characters";
+  if (username.length < 3 || username.length > 20) {
+    return "Username must be between 3 and 20 characters";
+  }
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+    return "Username can only contain letters, numbers, underscores, dots, and hyphens";
+  }
+  if (/^[.\-]/.test(username) || /[.\-]$/.test(username)) {
+    return "Username cannot start or end with a dot or hyphen";
+  }
+  if (/\.\./.test(username)) {
+    return "Username cannot contain consecutive dots";
   }
   return null;
 };
