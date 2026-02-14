@@ -99,7 +99,10 @@ export const useSummaryLogic = (navigation: any) => {
             {
               text: "Farewell",
               onPress: () =>
-                navigation.navigate("MainTabs", { screen: "HomeTab" }),
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs", params: { screen: "HomeTab" } }],
+                }),
             },
           ],
         );

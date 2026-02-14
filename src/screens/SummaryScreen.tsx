@@ -172,7 +172,10 @@ export default function SummaryScreen({ navigation, route }: Props) {
             <TouchableOpacity
               style={styles.discardButton}
               onPress={() =>
-                navigation.navigate("MainTabs", { screen: "HomeTab" })
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs", params: { screen: "HomeTab" } }],
+                })
               }
             >
               <Trash2 size={16} color="#B55D5D" style={{ marginRight: 8 }} />
