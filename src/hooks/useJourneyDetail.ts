@@ -13,6 +13,7 @@ interface Journey {
   polyline: string;
   max_speed: number;
   average_speed: number;
+  activity_type: string;
   coordinates?: { latitude: number; longitude: number }[];
   journey_images?: { id: string; image_url: string }[];
 }

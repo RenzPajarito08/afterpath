@@ -146,7 +146,6 @@ export default function ProfileScreen() {
               icon={Compass}
               label="Total Distance"
               value={stats.totalDistance}
-              subtext="Equivalent to crossing many borders"
             />
             <StatRow
               icon={MapIcon}
@@ -158,15 +157,12 @@ export default function ProfileScreen() {
               label="Time in Motion"
               value={stats.timeInMotion}
             />
-            <StatRow
-              icon={Zap}
-              label="Highest Pace"
-              value={stats.highestPace}
-            />
+            <StatRow icon={Zap} label="Max Speed" value={stats.maxSpeed} />
             <StatRow
               icon={Activity}
-              label="Average Rhythm"
-              value={stats.avgRhythm}
+              label="Avg Speed"
+              value={stats.avgSpeed}
+              subtext="Highest average speed"
             />
             <StatRow
               icon={Calendar}

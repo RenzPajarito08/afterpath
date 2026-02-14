@@ -1,5 +1,4 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { format } from "date-fns";
 import React from "react";
 import {
   ActivityIndicator,
@@ -51,13 +50,15 @@ export default function TimelineScreen({ navigation }: Props) {
           style={styles.card}
           imageStyle={styles.cardParchment}
         >
-          <Text style={styles.date}>
-            {format(new Date(journey.start_time), "MMMM d, yyyy")}
-          </Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.activityType}>
+              {journey.activity_type || "Journey"}
+            </Text>
+          </View>
           <Text style={styles.title}>{journey.title || "Untold Fragment"}</Text>
           <View style={styles.cardFooter}>
             <Text style={styles.distance}>
-              {(journey.distance_meters / 1000).toFixed(1)} km traveled
+              Traversed {(journey.distance_meters / 1000).toFixed(1)} km
             </Text>
           </View>
         </ImageBackground>
@@ -207,13 +208,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     opacity: 0.85,
   },
-  date: {
-    fontSize: 12,
-    color: "#718096",
-    marginBottom: 6,
-    fontWeight: "600",
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  activityType: {
+    fontSize: 10,
+    color: "#48BB78",
+    fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 2,
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
   title: {

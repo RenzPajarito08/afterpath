@@ -31,7 +31,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
 
 export default function SummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { distance, duration, coordinates, activityType, maxSpeed } =
+  const { distance, duration, coordinates, activityType, maxSpeed, title } =
     route.params;
   const {
     memory,
@@ -64,6 +64,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
       activityType,
       maxSpeed,
       averageSpeed: duration > 0 ? (distance / duration) * 3.6 : 0, // Convert m/s to km/h
+      title,
     });
   };
 
@@ -328,6 +329,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
+    marginBottom: 40,
   },
   prompt: {
     fontSize: 20,

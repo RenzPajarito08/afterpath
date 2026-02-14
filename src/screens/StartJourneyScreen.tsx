@@ -33,9 +33,17 @@ export default function StartJourneyScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [selectedActivity, setSelectedActivity] = useState("walking");
   const [title, setTitle] = useState("");
+  const [hasAttemptedStart, setHasAttemptedStart] = useState(false);
 
   const handleStart = () => {
-    navigation.navigate("Tracking", { activityType: selectedActivity });
+    setHasAttemptedStart(true);
+    if (!title.trim()) {
+      return;
+    }
+    navigation.navigate("Tracking", {
+      activityType: selectedActivity,
+      title: title.trim(),
+    });
   };
 
   return (
@@ -62,12 +70,26 @@ export default function StartJourneyScreen({ navigation }: Props) {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Name your chronicle (Optional)"
+            placeholder="Name your chronicle*"
             value={title}
             onChangeText={setTitle}
             placeholderTextColor="rgba(247, 247, 242, 0.6)"
           />
-          <View style={styles.inputUnderline} />
+          <View
+            style={[
+              styles.inputUnderline,
+              hasAttemptedStart &&
+                !title.trim() && {
+                  backgroundColor: "#B55D5D",
+                  height: 2,
+                },
+            ]}
+          />
+          {hasAttemptedStart && !title.trim() && (
+            <Text style={styles.validationText}>
+              A chronicle requires a name
+            </Text>
+          )}
         </View>
 
         <Text style={styles.label}>Choose your path</Text>
@@ -227,6 +249,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 2,
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+  },
+  validationText: {
+    fontSize: 12,
+    color: "#B55D5D",
+    marginTop: 6,
+    fontWeight: "700",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
 });

@@ -119,6 +119,9 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
           imageStyle={styles.parchmentImage}
         >
           <View style={styles.content}>
+            <Text style={styles.activityType}>
+              {journey.activity_type || "Journey"}
+            </Text>
             <Text style={styles.title}>
               {journey.title || "Untold Fragment"}
             </Text>
@@ -323,13 +326,13 @@ const styles = StyleSheet.create({
   content: {
     padding: 32,
   },
-  date: {
+  activityType: {
     fontSize: 14,
-    color: "#718096",
+    color: "#48BB78",
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 2,
-    marginBottom: 12,
+    marginBottom: 8,
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
   title: {
