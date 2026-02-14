@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
 import { supabase } from "../lib/supabase";
+import { showErrorAlert } from "../utils/alertHelper";
 
 interface Journey {
   id: string;
@@ -36,7 +36,7 @@ export const useJourneyDetail = (journeyId: string) => {
         .single();
 
       if (error) {
-        Alert.alert("Error", "Could not load chronicle.");
+        showErrorAlert("Could not load chronicle.");
         setLoading(false);
         return;
       }

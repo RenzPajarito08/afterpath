@@ -17,7 +17,6 @@ import {
 } from "lucide-react-native";
 import React from "react";
 import {
-  Alert,
   ImageBackground,
   Platform,
   ScrollView,
@@ -27,6 +26,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAlert } from "../context/AlertContext";
 import { useAuth } from "../context/AuthContext";
 import { RootStackParamList } from "../navigation/types";
 
@@ -73,12 +73,17 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { signOut } = useAuth();
+  const { showAlert } = useAlert();
 
   const handleLogout = async () => {
-    Alert.alert("End Journey", "Are you sure you want to rest for now?", [
-      { text: "Continue", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: () => signOut() },
-    ]);
+    showAlert({
+      title: "End Journey",
+      message: "Are you sure you want to rest for now?",
+      showCancel: true,
+      confirmText: "Sign Out",
+      cancelText: "Continue",
+      onConfirm: () => signOut(),
+    });
   };
 
   return (
@@ -107,20 +112,20 @@ export default function SettingsScreen() {
           icon={Mail}
           label="Secret Passcodes"
           onPress={() =>
-            Alert.alert(
-              "Coming Soon",
-              "This feature is still under development.",
-            )
+            showAlert({
+              title: "Coming Soon",
+              message: "This feature is still under development.",
+            })
           }
         />
         <SettingRow
           icon={Shield}
           label="Privacy & Wards"
           onPress={() =>
-            Alert.alert(
-              "Coming Soon",
-              "This feature is still under development.",
-            )
+            showAlert({
+              title: "Coming Soon",
+              message: "This feature is still under development.",
+            })
           }
         />
 
