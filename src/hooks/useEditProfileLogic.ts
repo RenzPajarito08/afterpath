@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { showErrorAlert, showSuccessAlert } from "../utils/alertHelper";
+import { validateBirthday, validateName } from "../utils/validation";
 
 export const useEditProfileLogic = () => {
   const navigation = useNavigation();
@@ -16,27 +17,57 @@ export const useEditProfileLogic = () => {
     birthday: "",
   });
 
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    birthday: "",
+  });
+
   const updateProfileField = (
     field: keyof typeof profileData,
     value: string,
   ) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
   };
 
-  const handleBirthdayChange = useCallback((text: string) => {
-    const numeric = text.replace(/[^0-9]/g, "");
-    let formatted = "";
-    if (numeric.length > 0) {
-      formatted = numeric.substring(0, 4);
-      if (numeric.length > 4) {
-        formatted += "-" + numeric.substring(4, 6);
-        if (numeric.length > 6) {
-          formatted += "-" + numeric.substring(6, 8);
+  const validateFields = useCallback(() => {
+    const fNameError = validateName(profileData.firstName, "First Name");
+    const lNameError = validateName(profileData.lastName, "Last Name");
+    const bDayError = validateBirthday(profileData.birthday);
+
+    const newErrors = {
+      firstName: fNameError || "",
+      lastName: lNameError || "",
+      birthday: bDayError || "",
+    };
+
+    setErrors(newErrors);
+
+    return !fNameError && !lNameError && !bDayError;
+  }, [profileData]);
+
+  const handleBirthdayChange = useCallback(
+    (text: string) => {
+      const numeric = text.replace(/[^0-9]/g, "");
+      let formatted = "";
+      if (numeric.length > 0) {
+        formatted = numeric.substring(0, 4);
+        if (numeric.length > 4) {
+          formatted += "-" + numeric.substring(4, 6);
+          if (numeric.length > 6) {
+            formatted += "-" + numeric.substring(6, 8);
+          }
         }
       }
-    }
-    updateProfileField("birthday", formatted);
-  }, []);
+      updateProfileField("birthday", formatted);
+    },
+    [errors],
+  );
 
   const getProfile = useCallback(async () => {
     try {
@@ -68,14 +99,19 @@ export const useEditProfileLogic = () => {
   }, [user]);
 
   const updateProfile = useCallback(async () => {
+    if (!validateFields()) {
+      showErrorAlert("Please correct the errors in your chronicle details.");
+      return;
+    }
+
     try {
       setSaving(true);
       if (!user) throw new Error("No user on the session!");
 
       const updates = {
         id: user.id,
-        first_name: profileData.firstName,
-        last_name: profileData.lastName,
+        first_name: profileData.firstName.trim(),
+        last_name: profileData.lastName.trim(),
         birthday: profileData.birthday || null,
         updated_at: new Date(),
       };
@@ -93,7 +129,7 @@ export const useEditProfileLogic = () => {
     } finally {
       setSaving(false);
     }
-  }, [user, profileData, navigation]);
+  }, [user, profileData, navigation, validateFields]);
 
   useEffect(() => {
     if (user) {
@@ -105,6 +141,7 @@ export const useEditProfileLogic = () => {
     loading,
     saving,
     ...profileData,
+    errors,
     setFirstName: (val: string) => updateProfileField("firstName", val),
     setLastName: (val: string) => updateProfileField("lastName", val),
     birthday: profileData.birthday,

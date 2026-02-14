@@ -28,6 +28,7 @@ export default function EditProfileScreen() {
     birthday,
     handleBirthdayChange,
     updateProfile,
+    errors,
   } = useEditProfileLogic();
 
   if (loading) {
@@ -67,33 +68,49 @@ export default function EditProfileScreen() {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>True Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.firstName && styles.inputError]}
               value={firstName}
               onChangeText={setFirstName}
               placeholder="Enscribed at birth"
-              maxLength={25}
+              maxLength={50}
               placeholderTextColor="#A0AEC0"
             />
-            <View style={styles.inputUnderline} />
+            <View
+              style={[
+                styles.inputUnderline,
+                errors.firstName && styles.underlineError,
+              ]}
+            />
+            {errors.firstName ? (
+              <Text style={styles.errorText}>{errors.firstName}</Text>
+            ) : null}
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Lineage</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.lastName && styles.inputError]}
               value={lastName}
               onChangeText={setLastName}
               placeholder="Family descent"
-              maxLength={25}
+              maxLength={50}
               placeholderTextColor="#A0AEC0"
             />
-            <View style={styles.inputUnderline} />
+            <View
+              style={[
+                styles.inputUnderline,
+                errors.lastName && styles.underlineError,
+              ]}
+            />
+            {errors.lastName ? (
+              <Text style={styles.errorText}>{errors.lastName}</Text>
+            ) : null}
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Day of Dawning (Birthday)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.birthday && styles.inputError]}
               value={birthday}
               onChangeText={handleBirthdayChange}
               placeholder="YYYY-MM-DD"
@@ -101,7 +118,15 @@ export default function EditProfileScreen() {
               maxLength={10}
               placeholderTextColor="#A0AEC0"
             />
-            <View style={styles.inputUnderline} />
+            <View
+              style={[
+                styles.inputUnderline,
+                errors.birthday && styles.underlineError,
+              ]}
+            />
+            {errors.birthday ? (
+              <Text style={styles.errorText}>{errors.birthday}</Text>
+            ) : null}
           </View>
 
           <TouchableOpacity
@@ -212,5 +237,18 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+  },
+  errorText: {
+    color: "#E53E3E",
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
+  },
+  inputError: {
+    color: "#E53E3E",
+  },
+  underlineError: {
+    backgroundColor: "#E53E3E",
+    opacity: 0.5,
   },
 });
