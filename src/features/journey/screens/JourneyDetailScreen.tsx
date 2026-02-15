@@ -1,7 +1,7 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { format } from "date-fns";
 import { ArrowLeft, Clock, MapPin, Watch, X, Zap } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -16,14 +16,15 @@ import {
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAlert } from "../context/AlertContext";
-import { useJourneyDetail } from "../hooks/useJourneyDetail";
-import { retroMapStyle } from "../lib/mapStyles";
-import { RootStackParamList } from "../navigation/types";
+
+import { useAlert } from "@/context/AlertContext";
+import { useJourneyDetail } from "@/features/journey/hooks/useJourneyDetail";
+import { retroMapStyle } from "@/lib/mapStyles";
+import { RootStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "JourneyDetail">;
 
-export default function JourneyDetailScreen({ navigation, route }: Props) {
+const JourneyDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { journeyId } = route.params;
   const { journey, loading } = useJourneyDetail(journeyId);
@@ -34,32 +35,59 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     if (!loading && journey?.coordinates && journey.coordinates.length > 0) {
-      // Small delay to ensure map is ready
-      setTimeout(() => {
-        mapRef.current?.fitToCoordinates(journey.coordinates, {
+      const timer = setTimeout(() => {
+        mapRef.current?.fitToCoordinates(journey.coordinates!, {
           edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
           animated: true,
         });
       }, 500);
+      return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, journey]);
 
   useEffect(() => {
-    if (!loading && journey && !init) {
-      setInit(true);
-    } else if (!loading && !journey) {
-      showAlert({
-        title: "Error",
-        message: "Could not load chronicle.",
-        onConfirm: () => navigation.goBack(),
-      });
+    if (!loading) {
+      if (journey) {
+        setInit(true);
+      } else {
+        showAlert({
+          title: "Error",
+          message: "Could not load chronicle.",
+          onConfirm: () => navigation.goBack(),
+        });
+      }
     }
-  }, [loading, journey, navigation]);
+  }, [loading, journey, navigation, showAlert]);
+
+  const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h > 0 ? h + "h " : ""}${m}m`;
+  };
+
+  const backButtonStyle = useMemo(
+    () => [styles.backButton, { top: Math.max(insets.top, 10) }],
+    [insets.top],
+  );
+
+  const reflectionPromptStyle = useMemo(
+    () => [
+      styles.reflectionPrompt,
+      { marginBottom: Math.max(insets.bottom, 40) },
+    ],
+    [insets.bottom],
+  );
+
+  const closeModalStyle = useMemo(
+    () => [styles.closeModal, { top: Math.max(insets.top, 20) }],
+    [insets.top],
+  );
 
   if (loading || !journey) {
     return (
       <ImageBackground
-        source={require("../../assets/parchment_texture.png")}
+        source={require("../../../../assets/parchment_texture.png")}
         style={styles.loadingContainer}
       >
         <ActivityIndicator color="#2F4F4F" size="large" />
@@ -68,23 +96,23 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
     );
   }
 
-  const formatDuration = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h > 0 ? h + "h " : ""}${m}m`;
-  };
-
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container} bounces={false}>
+    <View style={styles.flex}>
+      <ScrollView
+        style={styles.container}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.mapContainer}>
           <MapView
             ref={mapRef}
             style={styles.map}
             provider={PROVIDER_DEFAULT}
             customMapStyle={retroMapStyle}
+            scrollEnabled={false}
+            zoomEnabled={false}
             initialRegion={
-              journey?.coordinates && journey.coordinates.length > 0
+              journey.coordinates && journey.coordinates.length > 0
                 ? {
                     latitude: journey.coordinates[0].latitude,
                     longitude: journey.coordinates[0].longitude,
@@ -93,8 +121,6 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
                   }
                 : undefined
             }
-            scrollEnabled={false}
-            zoomEnabled={false}
           >
             {journey.coordinates && (
               <Polyline
@@ -106,15 +132,17 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
           </MapView>
 
           <TouchableOpacity
-            style={[styles.backButton, { top: Math.max(insets.top, 10) }]}
+            style={backButtonStyle}
             onPress={() => navigation.goBack()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
           >
             <ArrowLeft color="#2D3748" size={24} />
           </TouchableOpacity>
         </View>
 
         <ImageBackground
-          source={require("../../assets/parchment_texture.png")}
+          source={require("../../../../assets/parchment_texture.png")}
           style={styles.contentParchment}
           imageStyle={styles.parchmentImage}
         >
@@ -186,7 +214,6 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.sectionHeader}>Captured Moments</Text>
                 <View style={styles.scatterContainer}>
                   {journey.journey_images.map((img, index) => {
-                    // Generate a "stable" random rotation between -5 and 5 degrees
                     const rotation = ((index * 13) % 10) - 5;
                     const offsetX = ((index * 7) % 20) - 10;
 
@@ -202,12 +229,14 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
                               { translateX: offsetX },
                             ],
                             zIndex: index,
-                            marginTop: index === 0 ? 0 : -40, // Overlap effect
+                            marginTop: index === 0 ? 0 : -40,
                           },
                         ]}
+                        accessibilityLabel={`Captured moment ${index + 1}`}
+                        accessibilityRole="image"
                       >
                         <ImageBackground
-                          source={require("../../assets/parchment_texture.png")}
+                          source={require("../../../../assets/parchment_texture.png")}
                           style={styles.polaroidParchment}
                           imageStyle={styles.polaroidParchmentImage}
                         >
@@ -225,12 +254,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
               </>
             )}
 
-            <View
-              style={[
-                styles.reflectionPrompt,
-                { marginBottom: Math.max(insets.bottom, 40) },
-              ]}
-            >
+            <View style={reflectionPromptStyle}>
               <Text style={styles.promptText}>
                 A fragment of time from{" "}
                 {format(new Date(journey.start_time), "PP")}.
@@ -251,6 +275,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setSelectedImage(null)}
+          accessibilityLabel="Close image viewer"
         >
           <View style={styles.modalContent}>
             {selectedImage && (
@@ -261,8 +286,10 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
               />
             )}
             <TouchableOpacity
-              style={[styles.closeModal, { top: Math.max(insets.top, 20) }]}
+              style={closeModalStyle}
               onPress={() => setSelectedImage(null)}
+              accessibilityLabel="Close"
+              accessibilityRole="button"
             >
               <X color="#F7F7F2" size={30} />
             </TouchableOpacity>
@@ -271,9 +298,12 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
       </Modal>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#F7F7F2",
@@ -434,7 +464,7 @@ const styles = StyleSheet.create({
   },
   polaroidParchment: {
     padding: 12,
-    paddingBottom: 40, // Polaroid bottom space
+    paddingBottom: 40,
   },
   polaroidParchmentImage: {
     borderRadius: 2,
@@ -473,3 +503,5 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
 });
+
+export default JourneyDetailScreen;

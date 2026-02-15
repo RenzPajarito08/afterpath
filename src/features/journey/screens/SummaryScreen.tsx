@@ -8,7 +8,7 @@ import {
   X,
   Zap,
 } from "lucide-react-native";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -23,13 +23,14 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useSummaryLogic } from "../hooks/useSummaryLogic";
-import { retroMapStyle } from "../lib/mapStyles";
-import { RootStackParamList } from "../navigation/types";
+
+import { useSummaryLogic } from "@/features/journey/hooks/useSummaryLogic";
+import { retroMapStyle } from "@/lib/mapStyles";
+import { RootStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
 
-export default function SummaryScreen({ navigation, route }: Props) {
+const SummaryScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { distance, duration, coordinates, activityType, maxSpeed, title } =
     route.params;
@@ -55,7 +56,6 @@ export default function SummaryScreen({ navigation, route }: Props) {
     }
   }, [coordinates]);
 
-  // Wrap handleSave to pass the correct data
   const onSave = () => {
     handleSave({
       distance,
@@ -63,7 +63,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
       coordinates,
       activityType,
       maxSpeed,
-      averageSpeed: duration > 0 ? (distance / duration) * 3.6 : 0, // Convert m/s to km/h
+      averageSpeed: duration > 0 ? (distance / duration) * 3.6 : 0,
       title,
     });
   };
@@ -75,21 +75,26 @@ export default function SummaryScreen({ navigation, route }: Props) {
     return `${h > 0 ? h + "h " : ""}${m}m ${s}s`;
   };
 
+  const scrollContentStyle = useMemo(
+    () => [
+      styles.contentContainer,
+      {
+        paddingTop: Math.max(insets.top, 24),
+        paddingBottom: Math.max(insets.bottom, 24),
+      },
+    ],
+    [insets.top, insets.bottom],
+  );
+
   return (
     <ImageBackground
-      source={require("../../assets/landscape.png")}
+      source={require("../../../../assets/landscape.png")}
       style={styles.container}
     >
       <View style={styles.overlay}>
         <KeyboardAwareScrollView
           style={styles.flex}
-          contentContainerStyle={[
-            styles.contentContainer,
-            {
-              paddingTop: Math.max(insets.top, 24),
-              paddingBottom: Math.max(insets.bottom, 24),
-            },
-          ]}
+          contentContainerStyle={scrollContentStyle}
           keyboardShouldPersistTaps="handled"
           enableOnAndroid={true}
           extraScrollHeight={20}
@@ -129,30 +134,36 @@ export default function SummaryScreen({ navigation, route }: Props) {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Clock size={20} color="#F7F7F2" />
-              <Text style={styles.statValue}>{formatDuration(duration)}</Text>
-              <Text style={styles.statLabel}>Duration</Text>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statValue}>{formatDuration(duration)}</Text>
+                <Text style={styles.statLabel}>Duration</Text>
+              </View>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Zap size={20} color="#F7F7F2" />
-              <Text style={styles.statValue}>
-                {(duration > 0 ? (distance / duration) * 3.6 : 0).toFixed(1)}{" "}
-                km/h
-              </Text>
-              <Text style={styles.statLabel}>Avg Speed</Text>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statValue}>
+                  {(duration > 0 ? (distance / duration) * 3.6 : 0).toFixed(1)}{" "}
+                  km/h
+                </Text>
+                <Text style={styles.statLabel}>Avg Speed</Text>
+              </View>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Watch size={20} color="#F7F7F2" />
-              <Text style={styles.statValue}>
-                {((maxSpeed ?? 0) * 3.6).toFixed(1)} km/h
-              </Text>
-              <Text style={styles.statLabel}>Max Speed</Text>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statValue}>
+                  {((maxSpeed ?? 0) * 3.6).toFixed(1)} km/h
+                </Text>
+                <Text style={styles.statLabel}>Max Speed</Text>
+              </View>
             </View>
           </View>
 
           <ImageBackground
-            source={require("../../assets/parchment_texture.png")}
+            source={require("../../../../assets/parchment_texture.png")}
             style={styles.summaryCard}
             imageStyle={styles.parchmentImage}
           >
@@ -168,6 +179,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
               onChangeText={setMemory}
               textAlignVertical="top"
               placeholderTextColor="#A0AEC0"
+              accessibilityLabel="Journey reflection"
             />
 
             <Text style={styles.imageSectionTitle}>Captured Moments</Text>
@@ -178,6 +190,8 @@ export default function SummaryScreen({ navigation, route }: Props) {
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => removeImage(uri)}
+                    accessibilityLabel="Remove image"
+                    accessibilityRole="button"
                   >
                     <X size={12} color="#F7F7F2" />
                   </TouchableOpacity>
@@ -187,6 +201,8 @@ export default function SummaryScreen({ navigation, route }: Props) {
                 <TouchableOpacity
                   style={styles.addImageButton}
                   onPress={pickImage}
+                  accessibilityLabel="Add moments"
+                  accessibilityRole="button"
                 >
                   <Camera size={24} color="#2F4F4F" />
                   <Text style={styles.addImageText}>
@@ -200,6 +216,8 @@ export default function SummaryScreen({ navigation, route }: Props) {
               style={[styles.saveButton, saving && styles.disabledButton]}
               onPress={onSave}
               disabled={saving}
+              accessibilityLabel="Enscribe Memory"
+              accessibilityRole="button"
             >
               {saving ? (
                 <ActivityIndicator color="#F7F7F2" />
@@ -219,6 +237,8 @@ export default function SummaryScreen({ navigation, route }: Props) {
                   routes: [{ name: "MainTabs", params: { screen: "HomeTab" } }],
                 })
               }
+              accessibilityLabel="Discard Journey"
+              accessibilityRole="button"
             >
               <Trash2 size={16} color="#B55D5D" style={{ marginRight: 8 }} />
               <Text style={styles.discardButtonText}>Discard Journey</Text>
@@ -228,7 +248,7 @@ export default function SummaryScreen({ navigation, route }: Props) {
       </View>
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -298,19 +318,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
+  statTextContainer: {
+    alignItems: "center",
+    marginTop: 4,
+  },
   statValue: {
     color: "#F7F7F2",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
-    marginTop: 4,
   },
   statLabel: {
     color: "rgba(247, 247, 242, 0.6)",
-    fontSize: 10,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginTop: 2,
+    letterSpacing: 0.5,
     fontWeight: "600",
   },
   statDivider: {
@@ -344,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.4)",
     borderRadius: 16,
     padding: 20,
-    height: 120, // Reduced height to fit images
+    height: 120,
     fontSize: 16,
     borderColor: "rgba(0,0,0,0.1)",
     borderWidth: 1,
@@ -441,3 +463,5 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
 });
+
+export default SummaryScreen;

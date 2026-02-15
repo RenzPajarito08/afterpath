@@ -9,9 +9,8 @@ import { RootStackParamList } from "./types";
 import StartJourneyScreen from "@/features/journey/screens/StartJourneyScreen";
 import TrackingScreen from "@/features/journey/screens/TrackingScreen";
 
-import SummaryScreen from "@/screens/SummaryScreen";
-
-import JourneyDetailScreen from "@/screens/JourneyDetailScreen";
+import JourneyDetailScreen from "@/features/journey/screens/JourneyDetailScreen";
+import SummaryScreen from "@/features/journey/screens/SummaryScreen";
 
 import EditProfileScreen from "@/features/profile/screens/EditProfileScreen";
 import SettingsScreen from "@/features/profile/screens/SettingsScreen";

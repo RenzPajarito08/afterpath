@@ -1,9 +1,10 @@
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useState } from "react";
-import { useAlert } from "../context/AlertContext";
-import { useAuth } from "../context/AuthContext";
-import { uploadToCloudinary } from "../lib/cloudinary";
-import { supabase } from "../lib/supabase";
+
+import { useAlert } from "@/context/AlertContext";
+import { useAuth } from "@/context/AuthContext";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { supabase } from "@/lib/supabase";
 
 interface JourneyData {
   distance: number;
@@ -27,13 +28,12 @@ export const useSummaryLogic = (navigation: any) => {
       showAlert({
         title: "Limit Reached",
         message: "You can only enscribe up to 6 memories.",
-        type: "info",
       });
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       selectionLimit: 6 - selectedImages.length,
       quality: 0.8,
@@ -103,7 +103,6 @@ export const useSummaryLogic = (navigation: any) => {
         showAlert({
           title: "Memory Enscribed",
           message: "Your journey has been woven into time.",
-          type: "success",
           confirmText: "Farewell",
           onConfirm: () =>
             navigation.reset({
@@ -115,13 +114,12 @@ export const useSummaryLogic = (navigation: any) => {
         showAlert({
           title: "Error saving memory",
           message: e.message,
-          type: "error",
         });
       } finally {
         setSaving(false);
       }
     },
-    [user, memory, navigation, selectedImages],
+    [user, memory, navigation, selectedImages, showAlert],
   );
 
   return {
