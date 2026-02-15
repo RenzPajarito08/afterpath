@@ -72,7 +72,7 @@ export const useProfileLogic = () => {
         const totalJourneys = statsData.total_journeys.toString();
         const timeInHrs = (statsData.total_duration_seconds / 3600).toFixed(1);
         const maxSpeedKmh = (statsData.max_speed * 3.6).toFixed(1);
-        const maxAvgSpeedKmh = (statsData.max_avg_speed * 3.6).toFixed(1);
+        const maxAvgSpeedKmh = Number(statsData.max_avg_speed).toFixed(1);
 
         setStats((prev) => ({
           ...prev,
