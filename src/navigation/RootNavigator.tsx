@@ -14,8 +14,8 @@ import SummaryScreen from "@/screens/SummaryScreen";
 
 import JourneyDetailScreen from "@/screens/JourneyDetailScreen";
 
-import EditProfileScreen from "@/screens/EditProfileScreen";
-import SettingsScreen from "@/screens/SettingsScreen";
+import EditProfileScreen from "@/features/profile/screens/EditProfileScreen";
+import SettingsScreen from "@/features/profile/screens/SettingsScreen";
 import TabNavigator from "./TabNavigator";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

@@ -1,6 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { ChevronLeft, Save } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
+import { Controller } from "react-hook-form";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -13,28 +14,32 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useEditProfileLogic } from "../hooks/useEditProfileLogic";
 
-export default function EditProfileScreen() {
+import { useEditProfileLogic } from "@/features/profile/hooks/useEditProfileLogic";
+
+const EditProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const {
     loading,
     saving,
-    firstName,
-    setFirstName,
-    lastName,
-    setLastName,
-    birthday,
-    handleBirthdayChange,
-    updateProfile,
+    control,
     errors,
+    onSubmit,
+    handleBirthdayChange,
+    isValid,
+    isDirty,
   } = useEditProfileLogic();
+
+  const containerStyle = useMemo(
+    () => [styles.header, { paddingTop: insets.top + 10 }],
+    [insets.top],
+  );
 
   if (loading) {
     return (
       <ImageBackground
-        source={require("../../assets/parchment_texture.png")}
+        source={require("../../../../assets/parchment_texture.png")}
         style={styles.centerContainer}
       >
         <ActivityIndicator size="large" color="#2F4F4F" />
@@ -44,7 +49,7 @@ export default function EditProfileScreen() {
 
   return (
     <ImageBackground
-      source={require("../../assets/parchment_texture.png")}
+      source={require("../../../../assets/parchment_texture.png")}
       style={styles.container}
     >
       <KeyboardAwareScrollView
@@ -54,10 +59,12 @@ export default function EditProfileScreen() {
         enableOnAndroid={true}
         extraScrollHeight={20}
       >
-        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={containerStyle}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
           >
             <ChevronLeft size={28} color="#2D3748" />
           </TouchableOpacity>
@@ -67,13 +74,21 @@ export default function EditProfileScreen() {
         <View style={styles.editForm}>
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>True Name</Text>
-            <TextInput
-              style={[styles.input, errors.firstName && styles.inputError]}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="Enscribed at birth"
-              maxLength={50}
-              placeholderTextColor="#A0AEC0"
+            <Controller
+              control={control}
+              name="firstName"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, errors.firstName && styles.inputError]}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="Enscribed at birth"
+                  maxLength={50}
+                  placeholderTextColor="#A0AEC0"
+                  accessibilityLabel="True Name"
+                />
+              )}
             />
             <View
               style={[
@@ -81,20 +96,28 @@ export default function EditProfileScreen() {
                 errors.firstName && styles.underlineError,
               ]}
             />
-            {errors.firstName ? (
-              <Text style={styles.errorText}>{errors.firstName}</Text>
-            ) : null}
+            {errors.firstName && (
+              <Text style={styles.errorText}>{errors.firstName.message}</Text>
+            )}
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Lineage</Text>
-            <TextInput
-              style={[styles.input, errors.lastName && styles.inputError]}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Family descent"
-              maxLength={50}
-              placeholderTextColor="#A0AEC0"
+            <Controller
+              control={control}
+              name="lastName"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, errors.lastName && styles.inputError]}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="Family descent"
+                  maxLength={50}
+                  placeholderTextColor="#A0AEC0"
+                  accessibilityLabel="Lineage"
+                />
+              )}
             />
             <View
               style={[
@@ -102,21 +125,29 @@ export default function EditProfileScreen() {
                 errors.lastName && styles.underlineError,
               ]}
             />
-            {errors.lastName ? (
-              <Text style={styles.errorText}>{errors.lastName}</Text>
-            ) : null}
+            {errors.lastName && (
+              <Text style={styles.errorText}>{errors.lastName.message}</Text>
+            )}
           </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Day of Dawning (Birthday)</Text>
-            <TextInput
-              style={[styles.input, errors.birthday && styles.inputError]}
-              value={birthday}
-              onChangeText={handleBirthdayChange}
-              placeholder="YYYY-MM-DD"
-              keyboardType="numeric"
-              maxLength={10}
-              placeholderTextColor="#A0AEC0"
+            <Controller
+              control={control}
+              name="birthday"
+              render={({ field: { onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, errors.birthday && styles.inputError]}
+                  onBlur={onBlur}
+                  onChangeText={handleBirthdayChange}
+                  value={value || ""}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numeric"
+                  maxLength={10}
+                  placeholderTextColor="#A0AEC0"
+                  accessibilityLabel="Birthday"
+                />
+              )}
             />
             <View
               style={[
@@ -124,15 +155,20 @@ export default function EditProfileScreen() {
                 errors.birthday && styles.underlineError,
               ]}
             />
-            {errors.birthday ? (
-              <Text style={styles.errorText}>{errors.birthday}</Text>
-            ) : null}
+            {errors.birthday && (
+              <Text style={styles.errorText}>{errors.birthday.message}</Text>
+            )}
           </View>
 
           <TouchableOpacity
-            style={[styles.saveButton, saving && styles.disabledButton]}
-            onPress={updateProfile}
-            disabled={saving}
+            style={[
+              styles.saveButton,
+              (saving || !isValid || !isDirty) && styles.disabledButton,
+            ]}
+            onPress={onSubmit}
+            disabled={saving || !isValid || !isDirty}
+            accessibilityLabel="Confirm details"
+            accessibilityRole="button"
           >
             {saving ? (
               <ActivityIndicator color="#F7F7F2" />
@@ -147,7 +183,7 @@ export default function EditProfileScreen() {
       </KeyboardAwareScrollView>
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -252,3 +288,5 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+
+export default EditProfileScreen;

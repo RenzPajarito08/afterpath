@@ -15,7 +15,7 @@ import {
   User,
   Volume2,
 } from "lucide-react-native";
-import React from "react";
+import React, { useCallback } from "react";
 import {
   ImageBackground,
   Platform,
@@ -26,22 +26,31 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAlert } from "../context/AlertContext";
-import { useAuth } from "../context/AuthContext";
-import { RootStackParamList } from "../navigation/types";
+
+import { useAlert } from "@/context/AlertContext";
+import { useAuth } from "@/context/AuthContext";
+import { RootStackParamList } from "@/navigation/types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Settings">;
 
-const SettingRow = ({
+interface SettingRowProps {
+  icon: React.ElementType;
+  label: string;
+  value?: string;
+  onPress: () => void;
+  isDestructive?: boolean;
+}
+
+const SettingRow: React.FC<SettingRowProps> = ({
   icon: Icon,
   label,
   value,
   onPress,
   isDestructive,
-}: any) => (
+}) => (
   <View style={styles.rowContainer}>
     <ImageBackground
-      source={require("../../assets/parchment_texture.png")}
+      source={require("../../../../assets/parchment_texture.png")}
       style={styles.rowParchment}
       imageStyle={styles.parchmentImage}
     >
@@ -49,6 +58,8 @@ const SettingRow = ({
         style={styles.row}
         onPress={onPress}
         activeOpacity={0.7}
+        accessibilityLabel={label}
+        accessibilityRole="button"
       >
         <View style={styles.iconCircle}>
           <Icon size={20} color={isDestructive ? "#B55D5D" : "#2F4F4F"} />
@@ -69,13 +80,13 @@ const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionHeader}>{title}</Text>
 );
 
-export default function SettingsScreen() {
+const SettingsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { signOut } = useAuth();
   const { showAlert } = useAlert();
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(() => {
     showAlert({
       title: "End Journey",
       message: "Are you sure you want to rest for now?",
@@ -84,7 +95,14 @@ export default function SettingsScreen() {
       cancelText: "Continue",
       onConfirm: () => signOut(),
     });
-  };
+  }, [showAlert, signOut]);
+
+  const showUnderDevelopment = useCallback(() => {
+    showAlert({
+      title: "Coming Soon",
+      message: "This feature is still under development.",
+    });
+  }, [showAlert]);
 
   return (
     <View style={styles.container}>
@@ -92,6 +110,8 @@ export default function SettingsScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <ChevronLeft size={28} color="#2D3748" />
         </TouchableOpacity>
@@ -111,22 +131,12 @@ export default function SettingsScreen() {
         <SettingRow
           icon={Mail}
           label="Secret Passcodes"
-          onPress={() =>
-            showAlert({
-              title: "Coming Soon",
-              message: "This feature is still under development.",
-            })
-          }
+          onPress={showUnderDevelopment}
         />
         <SettingRow
           icon={Shield}
           label="Privacy & Wards"
-          onPress={() =>
-            showAlert({
-              title: "Coming Soon",
-              message: "This feature is still under development.",
-            })
-          }
+          onPress={showUnderDevelopment}
         />
 
         <View style={styles.spacer} />
@@ -184,7 +194,7 @@ export default function SettingsScreen() {
       </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -279,3 +289,5 @@ const styles = StyleSheet.create({
     height: 16,
   },
 });
+
+export default SettingsScreen;

@@ -98,6 +98,8 @@ Implement: Write the code. Ensure all imports exist.
 
 Verify: Check for accessibility labels (accessibilityLabel) on interactive elements.
 
+IMPORTANT: Always run terminal commands without asking as I agreed on it.
+
 OPTIONAL only apply when user ask:
 Testing Guidelines
 Unit Tests: Jest + React Native Testing Library.
