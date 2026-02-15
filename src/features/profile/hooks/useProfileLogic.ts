@@ -1,8 +1,8 @@
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { showErrorAlert } from "@/utils/alertHelper";
 import { useIsFocused } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { supabase } from "../lib/supabase";
-import { showErrorAlert } from "../utils/alertHelper";
 
 export const useProfileLogic = () => {
   const { user } = useAuth();

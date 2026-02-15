@@ -6,16 +6,16 @@ import { useAuth } from "../context/AuthContext";
 import WelcomeScreen from "../features/auth/screens/WelcomeScreen";
 import { RootStackParamList } from "./types";
 
-import StartJourneyScreen from "../screens/StartJourneyScreen";
+import StartJourneyScreen from "@/screens/StartJourneyScreen";
 
-import TrackingScreen from "../screens/TrackingScreen";
+import TrackingScreen from "@/screens/TrackingScreen";
 
-import SummaryScreen from "../screens/SummaryScreen";
+import SummaryScreen from "@/screens/SummaryScreen";
 
-import JourneyDetailScreen from "../screens/JourneyDetailScreen";
+import JourneyDetailScreen from "@/screens/JourneyDetailScreen";
 
-import EditProfileScreen from "../screens/EditProfileScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+import EditProfileScreen from "@/screens/EditProfileScreen";
+import SettingsScreen from "@/screens/SettingsScreen";
 import TabNavigator from "./TabNavigator";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

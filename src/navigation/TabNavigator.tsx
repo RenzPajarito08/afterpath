@@ -1,11 +1,11 @@
+import HomeScreen from "@/features/home/screens/HomeScreen";
+import TimelineScreen from "@/features/journey/screens/TimelineScreen";
+import ProfileScreen from "@/features/profile/screens/ProfileScreen";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Map, Scroll, User } from "lucide-react-native";
 import React from "react";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import HomeScreen from "../screens/HomeScreen";
-import ProfileScreen from "../screens/ProfileScreen";
-import TimelineScreen from "../screens/TimelineScreen";
 
 const Tab = createBottomTabNavigator();
 

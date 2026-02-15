@@ -1,5 +1,5 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,61 +12,69 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTimelineLogic } from "../hooks/useTimelineLogic";
-import { RootStackParamList } from "../navigation/types";
+
+import { useTimelineLogic } from "@/features/journey/hooks/useTimelineLogic";
+import { RootStackParamList } from "@/navigation/types";
 
 type TimelineScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "TimelineTab"
 >;
 
-interface Props {
+interface TimelineScreenProps {
   navigation: TimelineScreenNavigationProp;
 }
 
-export default function TimelineScreen({ navigation }: Props) {
+const TimelineScreen: React.FC<TimelineScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { journeys, refreshing, loadingMore, hasMore, onRefresh, loadMore } =
+  const { journeys, refreshing, loadingMore, onRefresh, loadMore } =
     useTimelineLogic();
 
-  const renderTimelineItem = ({ item: journey }: { item: any }) => (
-    <View style={styles.timelineItem}>
-      <View style={styles.nodeWrapper}>
-        <View style={styles.timelineDot} />
-        <View style={styles.dotInner} />
-      </View>
+  const renderTimelineItem = useCallback(
+    ({ item: journey }: { item: any }) => (
+      <View style={styles.timelineItem}>
+        <View style={styles.nodeWrapper}>
+          <View style={styles.timelineDot} />
+          <View style={styles.dotInner} />
+        </View>
 
-      <TouchableOpacity
-        style={styles.cardContainer}
-        activeOpacity={0.7}
-        onPress={() =>
-          navigation.navigate("JourneyDetail", {
-            journeyId: journey.id,
-          })
-        }
-      >
-        <ImageBackground
-          source={require("../../assets/parchment_texture.png")}
-          style={styles.card}
-          imageStyle={styles.cardParchment}
+        <TouchableOpacity
+          style={styles.cardContainer}
+          activeOpacity={0.7}
+          onPress={() =>
+            navigation.navigate("JourneyDetail", {
+              journeyId: journey.id,
+            })
+          }
+          accessibilityLabel={`Explore ${journey.title || "Untold Fragment"}`}
+          accessibilityRole="button"
         >
-          <View style={styles.cardHeader}>
-            <Text style={styles.activityType}>
-              {journey.activity_type || "Journey"}
+          <ImageBackground
+            source={require("../../../../assets/parchment_texture.png")}
+            style={styles.card}
+            imageStyle={styles.cardParchment}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={styles.activityType}>
+                {journey.activity_type || "Journey"}
+              </Text>
+            </View>
+            <Text style={styles.title}>
+              {journey.title || "Untold Fragment"}
             </Text>
-          </View>
-          <Text style={styles.title}>{journey.title || "Untold Fragment"}</Text>
-          <View style={styles.cardFooter}>
-            <Text style={styles.distance}>
-              Traversed {(journey.distance_meters / 1000).toFixed(1)} km
-            </Text>
-          </View>
-        </ImageBackground>
-      </TouchableOpacity>
-    </View>
+            <View style={styles.cardFooter}>
+              <Text style={styles.distance}>
+                Traversed {(journey.distance_meters / 1000).toFixed(1)} km
+              </Text>
+            </View>
+          </ImageBackground>
+        </TouchableOpacity>
+      </View>
+    ),
+    [navigation],
   );
 
-  const renderFooter = () => {
+  const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
     return (
       <View style={styles.footerLoader}>
@@ -74,23 +82,39 @@ export default function TimelineScreen({ navigation }: Props) {
         <Text style={styles.loaderText}>Unveiling more chronicles...</Text>
       </View>
     );
-  };
+  }, [loadingMore]);
 
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyStateText}>
-        No chronicles found. Your journey is yet to begin.
-      </Text>
-    </View>
+  const renderEmpty = useCallback(
+    () => (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyStateText}>
+          No chronicles found. Your journey is yet to begin.
+        </Text>
+      </View>
+    ),
+    [],
+  );
+
+  const headerStyle = useMemo(
+    () => [styles.header, { paddingTop: Math.max(insets.top, 16) }],
+    [insets.top],
+  );
+
+  const scrollContentStyle = useMemo(
+    () => [
+      styles.scrollContent,
+      { paddingBottom: Math.max(insets.bottom, 40) },
+    ],
+    [insets.bottom],
   );
 
   return (
     <ImageBackground
-      source={require("../../assets/parchment_texture.png")}
+      source={require("../../../../assets/parchment_texture.png")}
       style={styles.container}
-      imageStyle={{ opacity: 0.3 }}
+      imageStyle={styles.bgParchment}
     >
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+      <View style={headerStyle}>
         <Text style={styles.headerTitle}>Journey Logbook</Text>
         <Text style={styles.headerSubtitle}>Chronicles of your path</Text>
       </View>
@@ -101,10 +125,7 @@ export default function TimelineScreen({ navigation }: Props) {
           data={journeys}
           renderItem={renderTimelineItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: Math.max(insets.bottom, 40) },
-          ]}
+          contentContainerStyle={scrollContentStyle}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -117,12 +138,15 @@ export default function TimelineScreen({ navigation }: Props) {
       </View>
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F7F7F2",
+  },
+  bgParchment: {
+    opacity: 0.3,
   },
   header: {
     paddingHorizontal: 24,
@@ -269,3 +293,5 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
 });
+
+export default TimelineScreen;

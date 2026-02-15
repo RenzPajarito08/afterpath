@@ -1,7 +1,7 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronRight, Clock, Footprints, MapPin } from "lucide-react-native";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   ImageBackground,
   Platform,
@@ -13,19 +13,20 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHomeLogic } from "../hooks/useHomeLogic";
-import { RootStackParamList } from "../navigation/types";
+
+import { useHomeLogic } from "@/features/home/hooks/useHomeLogic";
+import { RootStackParamList } from "@/navigation/types";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "HomeTab"
 >;
 
-interface Props {
+interface HomeScreenProps {
   navigation: HomeScreenNavigationProp;
 }
 
-export default function HomeScreen({ navigation }: Props) {
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const {
     stats,
@@ -44,20 +45,32 @@ export default function HomeScreen({ navigation }: Props) {
     return unsubscribe;
   }, [navigation, refetch]);
 
+  const contentContainerStyle = useMemo(
+    () => ({
+      paddingBottom: Math.max(insets.bottom, 24),
+    }),
+    [insets.bottom],
+  );
+
+  const headerOverlayStyle = useMemo(
+    () => [styles.headerOverlay, { paddingTop: insets.top + 40 }],
+    [insets.top],
+  );
+
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}
+      contentContainerStyle={contentContainerStyle}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       <ImageBackground
-        source={require("../../assets/fantasy_header.png")}
+        source={require("../../../../assets/fantasy_header.png")}
         style={styles.headerImage}
         resizeMode="cover"
       >
-        <View style={[styles.headerOverlay, { paddingTop: insets.top + 40 }]}>
+        <View style={headerOverlayStyle}>
           <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
@@ -65,13 +78,15 @@ export default function HomeScreen({ navigation }: Props) {
 
       <View style={styles.content}>
         <ImageBackground
-          source={require("../../assets/parchment_texture.png")}
+          source={require("../../../../assets/parchment_texture.png")}
           style={styles.startCard}
           imageStyle={styles.cardParchment}
         >
           <TouchableOpacity
             style={styles.startCardInternal}
             onPress={() => navigation.navigate("StartJourney")}
+            accessibilityLabel="Begin a new memory"
+            accessibilityRole="button"
           >
             <View style={styles.iconContainer}>
               <Footprints color="#F7F7F2" size={32} />
@@ -102,6 +117,8 @@ export default function HomeScreen({ navigation }: Props) {
           <TouchableOpacity
             onPress={() => navigation.navigate("TimelineTab")}
             style={styles.viewAllBtn}
+            accessibilityLabel="View All Recent Memories"
+            accessibilityRole="link"
           >
             <Text style={styles.viewAllText}>View Logbook</Text>
             <ChevronRight size={16} color="#48BB78" />
@@ -120,9 +137,11 @@ export default function HomeScreen({ navigation }: Props) {
                 navigation.navigate("JourneyDetail", { journeyId: journey.id })
               }
               style={styles.journeyCardContainer}
+              accessibilityLabel={`Journey to ${journey.title || "Untitled Fragment"}`}
+              accessibilityRole="button"
             >
               <ImageBackground
-                source={require("../../assets/parchment_texture.png")}
+                source={require("../../../../assets/parchment_texture.png")}
                 style={styles.journeyCard}
                 imageStyle={styles.cardParchment}
               >
@@ -157,7 +176,7 @@ export default function HomeScreen({ navigation }: Props) {
       </View>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -169,10 +188,10 @@ const styles = StyleSheet.create({
   },
   headerOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)", // Slightly darker for better contrast
+    backgroundColor: "rgba(0,0,0,0.3)",
     padding: 24,
     justifyContent: "flex-end",
-    paddingBottom: 40, // More bottom padding for content overlap
+    paddingBottom: 40,
   },
   greeting: {
     fontSize: 32,
@@ -342,3 +361,5 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Italic" : "serif",
   },
 });
+
+export default HomeScreen;

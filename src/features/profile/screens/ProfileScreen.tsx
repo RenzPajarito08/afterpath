@@ -9,7 +9,7 @@ import {
   Settings,
   Zap,
 } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -23,36 +23,17 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useProfileLogic } from "../hooks/useProfileLogic";
-import { RootStackParamList } from "../navigation/types";
+
+import { StatRow } from "@/features/profile/components/StatRow";
+import { useProfileLogic } from "@/features/profile/hooks/useProfileLogic";
+import { RootStackParamList } from "@/navigation/types";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "ProfileTab"
 >;
 
-const StatRow = ({ icon: Icon, label, value, subtext }: any) => (
-  <View style={styles.statContainer}>
-    <ImageBackground
-      source={require("../../assets/parchment_texture.png")}
-      style={styles.statParchment}
-      imageStyle={styles.parchmentImage}
-    >
-      <View style={styles.statContent}>
-        <View style={styles.statIconContainer}>
-          <Icon size={20} color="#2F4F4F" />
-        </View>
-        <View style={styles.statInfo}>
-          <Text style={styles.statLabel}>{label}</Text>
-          {subtext && <Text style={styles.statSubtext}>{subtext}</Text>}
-        </View>
-        <Text style={styles.statValue}>{value}</Text>
-      </View>
-    </ImageBackground>
-  </View>
-);
-
-export default function ProfileScreen() {
+const ProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const {
@@ -67,10 +48,23 @@ export default function ProfileScreen() {
     onRefresh,
   } = useProfileLogic();
 
+  const scrollContentStyle = useMemo(
+    () => [
+      styles.scrollContent,
+      { paddingBottom: Math.max(insets.bottom, 24) },
+    ],
+    [insets.bottom],
+  );
+
+  const headerOverlayStyle = useMemo(
+    () => [styles.headerOverlay, { paddingTop: insets.top + 20 }],
+    [insets.top],
+  );
+
   if (loading && !firstName) {
     return (
       <ImageBackground
-        source={require("../../assets/parchment_texture.png")}
+        source={require("../../../../assets/parchment_texture.png")}
         style={styles.centerContainer}
       >
         <ActivityIndicator size="large" color="#2F4F4F" />
@@ -83,35 +77,32 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingBottom: Math.max(insets.bottom, 24),
-          },
-        ]}
+        contentContainerStyle={scrollContentStyle}
         bounces={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         <ImageBackground
-          source={require("../../assets/fantasy_header.png")}
+          source={require("../../../../assets/fantasy_header.png")}
           style={styles.headerBg}
           resizeMode="cover"
         >
-          <View style={[styles.headerOverlay, { paddingTop: insets.top + 20 }]}>
+          <View style={headerOverlayStyle}>
             <View style={styles.headerTop}>
               <Text style={styles.headerTitle}>Adventurer's Card</Text>
               <TouchableOpacity
                 style={styles.settingsButton}
                 onPress={() => navigation.navigate("Settings")}
+                accessibilityLabel="Settings"
+                accessibilityRole="button"
               >
                 <Settings size={28} color="#F7F7F2" />
               </TouchableOpacity>
             </View>
 
             <ImageBackground
-              source={require("../../assets/parchment_texture.png")}
+              source={require("../../../../assets/parchment_texture.png")}
               style={styles.identityCard}
               imageStyle={styles.parchmentImage}
             >
@@ -175,7 +166,7 @@ export default function ProfileScreen() {
       </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -283,50 +274,6 @@ const styles = StyleSheet.create({
   statsList: {
     gap: 16,
   },
-  statContainer: {
-    borderRadius: 24,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  statParchment: {
-    borderRadius: 24,
-  },
-  statContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 16,
-  },
-  statIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(47, 79, 79, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statInfo: {
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 16,
-    color: "#2D3748",
-    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
-    fontWeight: "500",
-  },
-  statSubtext: {
-    fontSize: 12,
-    color: "#718096",
-    fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
-    marginTop: 2,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#2F4F4F",
-    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
-  },
 });
+
+export default ProfileScreen;
