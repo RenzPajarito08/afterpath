@@ -87,6 +87,14 @@ export const useHomeLogic = () => {
     return "Good Night";
   };
 
+  const getSubtitle = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return "A new day for adventure";
+    if (hour >= 12 && hour < 17) return "The path continues forward";
+    if (hour >= 17 && hour < 21) return "Recording the day's tales";
+    return "Rest well, traveler";
+  };
+
   return {
     stats,
     recentJourneys,
@@ -94,5 +102,6 @@ export const useHomeLogic = () => {
     onRefresh,
     refetch: fetchData,
     greeting: getGreeting(),
+    subtitle: getSubtitle(),
   };
 };
