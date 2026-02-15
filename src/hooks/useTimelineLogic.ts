@@ -8,6 +8,7 @@ interface Journey {
   title: string;
   distance_meters: number;
   start_time: string;
+  activity_type: string;
 }
 
 const PAGE_SIZE = 10;
@@ -36,7 +37,7 @@ export const useTimelineLogic = () => {
 
         const { data, error } = await supabase
           .from("journeys")
-          .select("id, title, distance_meters, start_time")
+          .select("id, title, distance_meters, start_time, activity_type")
           .eq("user_id", user.id)
           .order("start_time", { ascending: false })
           .range(from, to);

@@ -27,8 +27,15 @@ interface Props {
 
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { stats, recentJourneys, refreshing, onRefresh, refetch, greeting } =
-    useHomeLogic();
+  const {
+    stats,
+    recentJourneys,
+    refreshing,
+    onRefresh,
+    refetch,
+    greeting,
+    subtitle,
+  } = useHomeLogic();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -52,7 +59,7 @@ export default function HomeScreen({ navigation }: Props) {
       >
         <View style={[styles.headerOverlay, { paddingTop: insets.top + 40 }]}>
           <Text style={styles.greeting}>{greeting}</Text>
-          <Text style={styles.subtitle}>Beyond the Journey</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
       </ImageBackground>
 

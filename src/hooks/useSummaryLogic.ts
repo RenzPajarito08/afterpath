@@ -11,6 +11,8 @@ interface JourneyData {
   coordinates: { latitude: number; longitude: number; timestamp?: number }[];
   activityType: string;
   maxSpeed?: number;
+  averageSpeed?: number;
+  title: string;
 }
 
 export const useSummaryLogic = (navigation: any) => {
@@ -71,11 +73,12 @@ export const useSummaryLogic = (navigation: any) => {
             memory_text: memory,
             activity_type: data.activityType,
             max_speed: data.maxSpeed || 0,
+            average_speed: data.averageSpeed || 0,
             start_time: new Date(
               data.coordinates[0]?.timestamp || Date.now(),
             ).toISOString(),
             end_time: new Date().toISOString(),
-            title: "Journey on " + new Date().toLocaleDateString(),
+            title: data.title,
             mood_score: 5,
           })
           .select()

@@ -1,5 +1,13 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Camera, Save, Trash2, X } from "lucide-react-native";
+import {
+  Camera,
+  Clock,
+  Save,
+  Trash2,
+  Watch,
+  X,
+  Zap,
+} from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -23,7 +31,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Summary">;
 
 export default function SummaryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { distance, duration, coordinates, activityType, maxSpeed } =
+  const { distance, duration, coordinates, activityType, maxSpeed, title } =
     route.params;
   const {
     memory,
@@ -55,7 +63,16 @@ export default function SummaryScreen({ navigation, route }: Props) {
       coordinates,
       activityType,
       maxSpeed,
+      averageSpeed: duration > 0 ? (distance / duration) * 3.6 : 0, // Convert m/s to km/h
+      title,
     });
+  };
+
+  const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h > 0 ? h + "h " : ""}${m}m ${s}s`;
   };
 
   return (
@@ -106,6 +123,31 @@ export default function SummaryScreen({ navigation, route }: Props) {
                   {(distance / 1000).toFixed(2)} km traversed
                 </Text>
               </View>
+            </View>
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Clock size={20} color="#F7F7F2" />
+              <Text style={styles.statValue}>{formatDuration(duration)}</Text>
+              <Text style={styles.statLabel}>Duration</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Zap size={20} color="#F7F7F2" />
+              <Text style={styles.statValue}>
+                {(duration > 0 ? (distance / duration) * 3.6 : 0).toFixed(1)}{" "}
+                km/h
+              </Text>
+              <Text style={styles.statLabel}>Avg Speed</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Watch size={20} color="#F7F7F2" />
+              <Text style={styles.statValue}>
+                {((maxSpeed ?? 0) * 3.6).toFixed(1)} km/h
+              </Text>
+              <Text style={styles.statLabel}>Max Speed</Text>
             </View>
           </View>
 
@@ -243,6 +285,39 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
     letterSpacing: 1,
   },
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: "rgba(47, 79, 79, 0.8)",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 24,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statValue: {
+    color: "#F7F7F2",
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
+    marginTop: 4,
+  },
+  statLabel: {
+    color: "rgba(247, 247, 242, 0.6)",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginTop: 2,
+    fontWeight: "600",
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: "rgba(247, 247, 242, 0.2)",
+  },
   parchmentImage: {
     borderRadius: 24,
   },
@@ -254,6 +329,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
+    marginBottom: 40,
   },
   prompt: {
     fontSize: 20,

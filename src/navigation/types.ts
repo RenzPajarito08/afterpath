@@ -4,13 +4,14 @@ export type RootStackParamList = {
   MainTabs: { screen?: string } | undefined;
   HomeTab: undefined; // Keeping for internal ref if needed, to allow direct navigation
   StartJourney: undefined;
-  Tracking: { activityType: string };
+  Tracking: { activityType: string; title: string };
   Summary: {
     distance: number;
     duration: number;
     coordinates: { latitude: number; longitude: number; timestamp: number }[];
     activityType: string;
     maxSpeed?: number;
+    title: string;
   };
   JourneyDetail: { journeyId: string };
   TimelineTab: undefined;

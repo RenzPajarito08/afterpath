@@ -22,7 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Tracking">;
 
 export default function TrackingScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { activityType } = route.params;
+  const { activityType, title } = route.params;
   const [isSaving, setIsSaving] = useState(false);
   const mapRef = useRef<MapView>(null);
 
@@ -93,6 +93,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
             coordinates: finalCoordinates,
             activityType: activityType,
             maxSpeed,
+            title: title,
           });
         } catch (e) {
           console.log("Failed to end journey: ", e);

@@ -14,8 +14,8 @@ export const useProfileLogic = () => {
     totalDistance: "0",
     questsCompleted: "0",
     timeInMotion: "0",
-    highestPace: "0",
-    avgRhythm: "0",
+    maxSpeed: "0",
+    avgSpeed: "0",
     activeSince: "",
   });
 
@@ -72,22 +72,15 @@ export const useProfileLogic = () => {
         const totalJourneys = statsData.total_journeys.toString();
         const timeInHrs = (statsData.total_duration_seconds / 3600).toFixed(1);
         const maxSpeedKmh = (statsData.max_speed * 3.6).toFixed(1);
-
-        // Average Rhythm (Speed km/h) = Total Dist / Total Time
-        let avgSpeedKmh = "0.0";
-        if (statsData.total_duration_seconds > 0) {
-          const distKm = statsData.total_distance_meters / 1000;
-          const timeHr = statsData.total_duration_seconds / 3600;
-          avgSpeedKmh = (distKm / timeHr).toFixed(1);
-        }
+        const maxAvgSpeedKmh = (statsData.max_avg_speed * 3.6).toFixed(1);
 
         setStats((prev) => ({
           ...prev,
           totalDistance: `${totalDistKm} km`,
           questsCompleted: totalJourneys,
           timeInMotion: `${timeInHrs} Hrs`,
-          highestPace: `${maxSpeedKmh} km/h`,
-          avgRhythm: `${avgSpeedKmh} km/h`,
+          maxSpeed: `${maxSpeedKmh} km/h`,
+          avgSpeed: `${maxAvgSpeedKmh} km/h`,
         }));
       }
     } catch (error: any) {
