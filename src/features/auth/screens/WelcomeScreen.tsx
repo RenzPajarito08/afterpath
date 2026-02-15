@@ -1,6 +1,7 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Lock, LogIn, Mail, UserPlus } from "lucide-react-native";
-import React from "react";
+import React, { useMemo } from "react";
+import { Controller } from "react-hook-form";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -13,61 +14,50 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWelcomeLogic } from "../hooks/useWelcomeLogic";
-import { RootStackParamList } from "../navigation/types";
+
+import { useWelcomeLogic } from "@/features/auth/hooks/useWelcomeLogic";
+import { RootStackParamList } from "@/navigation/types";
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "Welcome"
 >;
 
-interface Props {
+interface WelcomeScreenProps {
   navigation: WelcomeScreenNavigationProp;
 }
 
-export default function WelcomeScreen({ navigation }: Props) {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = () => {
   const insets = useSafeAreaInsets();
-  const {
-    emailOrUsername,
-    setEmailOrUsername,
-    username,
-    setUsername,
-    password,
-    setPassword,
-    confirmPassword,
-    setConfirmPassword,
-    loading,
-    isLogin,
-    setIsLogin,
-    signIn,
-    signUp,
-    errors,
-    formError,
-  } = useWelcomeLogic();
+  const { control, onSubmit, loading, isLogin, setIsLogin, errors, formError } =
+    useWelcomeLogic();
+
+  const overlayStyle = useMemo(
+    () => [
+      styles.overlay,
+      {
+        paddingTop: insets.top + 40,
+        paddingBottom: insets.bottom + 20,
+      },
+    ],
+    [insets.top, insets.bottom],
+  );
 
   return (
     <ImageBackground
-      source={require("../../assets/landscape.png")}
+      source={require("../../../../assets/landscape.png")}
       style={styles.container}
       resizeMode="cover"
     >
       <KeyboardAwareScrollView
         style={styles.keyboardView}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={styles.scrollContent}
         bounces={false}
         keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
+        enableOnAndroid
         extraScrollHeight={20}
       >
-        <View
-          style={[
-            styles.overlay,
-            {
-              paddingTop: insets.top + 40,
-              paddingBottom: insets.bottom + 20,
-            },
-          ]}
-        >
+        <View style={overlayStyle}>
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Afterpath</Text>
             <Text style={styles.subtitle}>Beyond the Journey</Text>
@@ -78,7 +68,7 @@ export default function WelcomeScreen({ navigation }: Props) {
           </View>
 
           <ImageBackground
-            source={require("../../assets/parchment_texture.png")}
+            source={require("../../../../assets/parchment_texture.png")}
             style={styles.parchmentContainer}
             imageStyle={styles.parchmentImage}
           >
@@ -96,18 +86,28 @@ export default function WelcomeScreen({ navigation }: Props) {
                       color={errors.username ? "#E53E3E" : "#718096"}
                       style={styles.inputIcon}
                     />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Chosen Username"
-                      placeholderTextColor="#A0AEC0"
-                      value={username}
-                      onChangeText={setUsername}
-                      autoCapitalize="none"
+                    <Controller
+                      control={control}
+                      name="username"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Chosen Username"
+                          placeholderTextColor="#A0AEC0"
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                          autoCapitalize="none"
+                          accessibilityLabel="Chosen Username"
+                        />
+                      )}
                     />
                   </View>
-                  {errors.username ? (
-                    <Text style={styles.errorText}>{errors.username}</Text>
-                  ) : null}
+                  {errors.username && (
+                    <Text style={styles.errorText}>
+                      {errors.username.message}
+                    </Text>
+                  )}
                 </View>
               )}
 
@@ -123,21 +123,33 @@ export default function WelcomeScreen({ navigation }: Props) {
                     color={errors.emailOrUsername ? "#E53E3E" : "#718096"}
                     style={styles.inputIcon}
                   />
-                  <TextInput
-                    style={styles.input}
-                    placeholder={
-                      isLogin ? "Email or Username" : "Sanctuary Email"
-                    }
-                    placeholderTextColor="#A0AEC0"
-                    value={emailOrUsername}
-                    onChangeText={setEmailOrUsername}
-                    autoCapitalize="none"
-                    keyboardType={isLogin ? "default" : "email-address"}
+                  <Controller
+                    control={control}
+                    name="emailOrUsername"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={styles.input}
+                        placeholder={
+                          isLogin ? "Email or Username" : "Sanctuary Email"
+                        }
+                        placeholderTextColor="#A0AEC0"
+                        value={value}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        autoCapitalize="none"
+                        keyboardType={isLogin ? "default" : "email-address"}
+                        accessibilityLabel={
+                          isLogin ? "Email or Username" : "Sanctuary Email"
+                        }
+                      />
+                    )}
                   />
                 </View>
-                {errors.emailOrUsername ? (
-                  <Text style={styles.errorText}>{errors.emailOrUsername}</Text>
-                ) : null}
+                {errors.emailOrUsername && (
+                  <Text style={styles.errorText}>
+                    {errors.emailOrUsername.message}
+                  </Text>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -152,21 +164,33 @@ export default function WelcomeScreen({ navigation }: Props) {
                     color={errors.password ? "#E53E3E" : "#718096"}
                     style={styles.inputIcon}
                   />
-                  <TextInput
-                    style={styles.input}
-                    placeholder={
-                      isLogin ? "Secret Phrase" : "New Secret Phrase"
-                    }
-                    placeholderTextColor="#A0AEC0"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    autoCapitalize="none"
+                  <Controller
+                    control={control}
+                    name="password"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={styles.input}
+                        placeholder={
+                          isLogin ? "Secret Phrase" : "New Secret Phrase"
+                        }
+                        placeholderTextColor="#A0AEC0"
+                        value={value}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                        secureTextEntry
+                        autoCapitalize="none"
+                        accessibilityLabel={
+                          isLogin ? "Secret Phrase" : "New Secret Phrase"
+                        }
+                      />
+                    )}
                   />
                 </View>
-                {errors.password ? (
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                ) : null}
+                {errors.password && (
+                  <Text style={styles.errorText}>
+                    {errors.password.message}
+                  </Text>
+                )}
               </View>
 
               {!isLogin && (
@@ -182,21 +206,29 @@ export default function WelcomeScreen({ navigation }: Props) {
                       color={errors.confirmPassword ? "#E53E3E" : "#718096"}
                       style={styles.inputIcon}
                     />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Confirm Secret Phrase"
-                      placeholderTextColor="#A0AEC0"
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry
-                      autoCapitalize="none"
+                    <Controller
+                      control={control}
+                      name="confirmPassword"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Confirm Secret Phrase"
+                          placeholderTextColor="#A0AEC0"
+                          value={value}
+                          onBlur={onBlur}
+                          onChangeText={onChange}
+                          secureTextEntry
+                          autoCapitalize="none"
+                          accessibilityLabel="Confirm Secret Phrase"
+                        />
+                      )}
                     />
                   </View>
-                  {errors.confirmPassword ? (
+                  {errors.confirmPassword && (
                     <Text style={styles.errorText}>
-                      {errors.confirmPassword}
+                      {errors.confirmPassword.message}
                     </Text>
-                  ) : null}
+                  )}
                 </View>
               )}
 
@@ -208,8 +240,12 @@ export default function WelcomeScreen({ navigation }: Props) {
 
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={isLogin ? signIn : signUp}
+                onPress={onSubmit}
                 disabled={loading}
+                accessibilityLabel={
+                  isLogin ? "Begin Journey" : "Join Fellowship"
+                }
+                accessibilityRole="button"
               >
                 {loading ? (
                   <ActivityIndicator color="#F7F7F2" />
@@ -230,8 +266,14 @@ export default function WelcomeScreen({ navigation }: Props) {
           </ImageBackground>
 
           <TouchableOpacity
-            onPress={() => setIsLogin()}
+            onPress={setIsLogin}
             style={styles.switchButton}
+            accessibilityLabel={
+              isLogin
+                ? "Switch to Sign Up fate"
+                : "Switch to Sign In retrace steps"
+            }
+            accessibilityRole="link"
           >
             <Text style={styles.switchText}>
               {isLogin
@@ -243,7 +285,7 @@ export default function WelcomeScreen({ navigation }: Props) {
       </KeyboardAwareScrollView>
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -252,9 +294,12 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(247, 247, 242, 0.4)", // Very subtle tint
+    backgroundColor: "rgba(247, 247, 242, 0.4)",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 30,
@@ -329,7 +374,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Regular" : "serif",
   },
   primaryButton: {
-    backgroundColor: "#2F4F4F", // Deep Forest Green
+    backgroundColor: "#2F4F4F",
     paddingVertical: 16,
     borderRadius: 30,
     flexDirection: "row",
@@ -387,3 +432,5 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Medium" : "serif",
   },
 });
+
+export default WelcomeScreen;

@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import WelcomeScreen from "../screens/WelcomeScreen";
+import WelcomeScreen from "../features/auth/screens/WelcomeScreen";
 import { RootStackParamList } from "./types";
 
 import StartJourneyScreen from "../screens/StartJourneyScreen";
