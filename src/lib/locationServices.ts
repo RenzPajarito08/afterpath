@@ -1,4 +1,4 @@
-import { Alert } from "react-native";
+import { showErrorAlert } from "../utils/alertHelper";
 import { Coordinate } from "./geometry";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -10,9 +10,9 @@ export async function snapToRoads(
   coordinates: Coordinate[],
 ): Promise<Coordinate[]> {
   if (!GOOGLE_MAPS_API_KEY) {
-    Alert.alert(
-      "Roads API Error",
+    showErrorAlert(
       "Google Maps API Key is missing at runtime. Skipping Snap to Roads.",
+      "Roads API Error",
     );
     console.warn("Google Maps API Key is missing. Skipping Snap to Roads.");
     return coordinates;

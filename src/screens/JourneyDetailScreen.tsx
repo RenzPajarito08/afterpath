@@ -4,7 +4,6 @@ import { ArrowLeft, Clock, MapPin, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ImageBackground,
   Modal,
@@ -17,6 +16,7 @@ import {
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAlert } from "../context/AlertContext";
 import { useJourneyDetail } from "../hooks/useJourneyDetail";
 import { retroMapStyle } from "../lib/mapStyles";
 import { RootStackParamList } from "../navigation/types";
@@ -27,6 +27,7 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { journeyId } = route.params;
   const { journey, loading } = useJourneyDetail(journeyId);
+  const { showAlert } = useAlert();
   const [init, setInit] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -47,8 +48,11 @@ export default function JourneyDetailScreen({ navigation, route }: Props) {
     if (!loading && journey && !init) {
       setInit(true);
     } else if (!loading && !journey) {
-      Alert.alert("Error", "Could not load chronicle.");
-      navigation.goBack();
+      showAlert({
+        title: "Error",
+        message: "Could not load chronicle.",
+        onConfirm: () => navigation.goBack(),
+      });
     }
   }, [loading, journey, navigation]);
 

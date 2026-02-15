@@ -3,7 +3,6 @@ import { Pause, Play, Square } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ImageBackground,
   Platform,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAlert } from "../context/AlertContext";
 import { useJourneyTracker } from "../hooks/useJourneyTracker";
 import { getDistance } from "../lib/geometry";
 import { retroMapStyle } from "../lib/mapStyles";
@@ -38,6 +38,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
     speed,
     maxSpeed,
   } = useJourneyTracker();
+  const { showAlert } = useAlert();
 
   // Animate map to new location
   useEffect(() => {
@@ -54,59 +55,52 @@ export default function TrackingScreen({ navigation, route }: Props) {
   const handleEndJourney = async () => {
     stopTracking();
 
-    Alert.alert(
-      "Chronicle Complete",
-      `Your path covered ${(distance / 1000).toFixed(2)} km over ${formatDuration(duration)}.`,
-      [
-        {
-          text: "Enscribe Memory",
-          onPress: async () => {
-            setIsSaving(true);
-            try {
-              let finalCoordinates = routeCoordinates;
+    showAlert({
+      title: "Chronicle Complete",
+      message: `Your path covered ${(distance / 1000).toFixed(2)} km over ${formatDuration(duration)}.`,
+      confirmText: "Enscribe Memory",
+      onConfirm: async () => {
+        setIsSaving(true);
+        try {
+          let finalCoordinates = routeCoordinates;
 
-              try {
-                if (routeCoordinates.length > 5) {
-                  const { snapToRoads } =
-                    await import("../lib/locationServices");
-                  const snapped = await snapToRoads(routeCoordinates);
-                  if (snapped.length > 0) {
-                    finalCoordinates = snapped;
-                  }
-                }
-              } catch (e) {
-                console.log("Failed to snap path: ", e);
+          try {
+            if (routeCoordinates.length > 5) {
+              const { snapToRoads } = await import("../lib/locationServices");
+              const snapped = await snapToRoads(routeCoordinates);
+              if (snapped.length > 0) {
+                finalCoordinates = snapped;
               }
-
-              let finalDistance = distance;
-              if (finalCoordinates !== routeCoordinates) {
-                // If we have snapped coordinates, we should recalculate the distance
-                // We need getDistance exposed or copied. I exported it from the hook file.
-                finalDistance = 0;
-                for (let i = 0; i < finalCoordinates.length - 1; i++) {
-                  finalDistance += getDistance(
-                    finalCoordinates[i],
-                    finalCoordinates[i + 1],
-                  );
-                }
-              }
-
-              navigation.navigate("Summary", {
-                distance: finalDistance,
-                duration,
-                coordinates: finalCoordinates,
-                activityType: activityType,
-                maxSpeed,
-              });
-            } catch (e) {
-              console.log("Failed to end journey: ", e);
-            } finally {
-              setIsSaving(false);
             }
-          },
-        },
-      ],
-    );
+          } catch (e) {
+            console.log("Failed to snap path: ", e);
+          }
+
+          let finalDistance = distance;
+          if (finalCoordinates !== routeCoordinates) {
+            finalDistance = 0;
+            for (let i = 0; i < finalCoordinates.length - 1; i++) {
+              finalDistance += getDistance(
+                finalCoordinates[i],
+                finalCoordinates[i + 1],
+              );
+            }
+          }
+
+          navigation.navigate("Summary", {
+            distance: finalDistance,
+            duration,
+            coordinates: finalCoordinates,
+            activityType: activityType,
+            maxSpeed,
+          });
+        } catch (e) {
+          console.log("Failed to end journey: ", e);
+        } finally {
+          setIsSaving(false);
+        }
+      },
+    });
   };
 
   const formatDuration = (seconds: number) => {

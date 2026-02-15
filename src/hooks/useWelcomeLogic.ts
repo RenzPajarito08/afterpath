@@ -1,7 +1,11 @@
 import { useCallback, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { showErrorAlert, showSuccessAlert } from "../utils/alertHelper";
-import { validatePasswordMatch, validateUsername } from "../utils/validation";
+import { showSuccessAlert } from "../utils/alertHelper";
+import {
+  validateEmail,
+  validatePasswordMatch,
+  validateUsername,
+} from "../utils/validation";
 
 export const useWelcomeLogic = () => {
   const [formData, setFormData] = useState({
@@ -10,27 +14,110 @@ export const useWelcomeLogic = () => {
     password: "",
     confirmPassword: "",
   });
+
+  const [errors, setErrors] = useState({
+    emailOrUsername: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const [formError, setFormError] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
 
   const updateField = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error for that specific field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+    // Clear general form error
+    if (formError) setFormError("");
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setFormError("");
+    setErrors({
+      emailOrUsername: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+    });
+  };
+
+  const validateSignIn = () => {
+    const { emailOrUsername, password } = formData;
+    const newErrors = { ...errors };
+    let isValid = true;
+
+    if (!emailOrUsername.trim()) {
+      newErrors.emailOrUsername = "Field is required";
+      isValid = false;
+    }
+    if (!password) {
+      newErrors.password = "Secret phrase is required";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const validateSignUp = () => {
+    const { username, emailOrUsername, password, confirmPassword } = formData;
+    const newErrors = {
+      emailOrUsername: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+    };
+    let isValidForm = true;
+
+    const uError = validateUsername(username.trim());
+    if (uError) {
+      newErrors.username = uError;
+      isValidForm = false;
+    }
+
+    const eError = validateEmail(emailOrUsername.trim());
+    if (eError) {
+      newErrors.emailOrUsername = eError;
+      isValidForm = false;
+    }
+
+    if (!password) {
+      newErrors.password = "Secret phrase is required";
+      isValidForm = false;
+    } else if (password.length < 6) {
+      newErrors.password = "Secret phrase must be at least 6 characters";
+      isValidForm = false;
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your phrase";
+      isValidForm = false;
+    } else if (!validatePasswordMatch(password, confirmPassword)) {
+      newErrors.confirmPassword = "Phrases do not match";
+      isValidForm = false;
+    }
+
+    setErrors(newErrors);
+    return isValidForm;
   };
 
   const signIn = useCallback(async () => {
+    if (!validateSignIn()) return;
+
     const { emailOrUsername, password } = formData;
     const trimmedInput = emailOrUsername.trim();
-
-    if (!trimmedInput || !password) {
-      showErrorAlert("Please fill in all fields");
-      return;
-    }
 
     setLoading(true);
     let loginEmail = trimmedInput;
 
     try {
-      // Resolve username to email if it doesn't look like an email
       if (!trimmedInput.includes("@")) {
         const { data, error: rpcError } = await supabase.rpc(
           "get_email_by_username",
@@ -39,7 +126,11 @@ export const useWelcomeLogic = () => {
 
         if (rpcError) throw rpcError;
         if (!data) {
-          showErrorAlert("Username not found");
+          setErrors((prev) => ({
+            ...prev,
+            emailOrUsername: "Username not found",
+          }));
+          setLoading(false);
           return;
         }
         loginEmail = data;
@@ -51,40 +142,25 @@ export const useWelcomeLogic = () => {
       });
 
       if (error) {
-        showErrorAlert(error.message, "Login Failed");
+        setFormError(error.message);
       }
     } catch (err: any) {
-      showErrorAlert(err.message || "Failed to resolve username");
+      setFormError(err.message || "Failed to resolve username");
     } finally {
       setLoading(false);
     }
-  }, [formData]);
+  }, [formData, validateSignIn]);
 
   const signUp = useCallback(async () => {
-    const { username, emailOrUsername, password, confirmPassword } = formData;
+    if (!validateSignUp()) return;
+
+    const { username, emailOrUsername, password } = formData;
     const trimmedUsername = username.trim();
     const trimmedEmail = emailOrUsername.trim();
-
-    if (!trimmedUsername || !trimmedEmail || !password || !confirmPassword) {
-      showErrorAlert("Please fill in all fields");
-      return;
-    }
-
-    if (!validatePasswordMatch(password, confirmPassword)) {
-      showErrorAlert("Passwords do not match");
-      return;
-    }
-
-    const usernameError = validateUsername(trimmedUsername);
-    if (usernameError) {
-      showErrorAlert(usernameError);
-      return;
-    }
 
     setLoading(true);
 
     try {
-      // Check if username is already taken
       const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
         .select("username")
@@ -93,7 +169,11 @@ export const useWelcomeLogic = () => {
 
       if (checkError) throw checkError;
       if (existingUser) {
-        showErrorAlert("This username is already claimed by another seeker.");
+        setErrors((prev) => ({
+          ...prev,
+          username: "This username is already claimed.",
+        }));
+        setLoading(false);
         return;
       }
 
@@ -111,7 +191,7 @@ export const useWelcomeLogic = () => {
       });
 
       if (error) {
-        showErrorAlert(error.message, "Signup Failed");
+        setFormError(error.message);
         return;
       }
 
@@ -123,21 +203,23 @@ export const useWelcomeLogic = () => {
         showSuccessAlert("Please check your inbox for email verification!");
       }
     } catch (err: any) {
-      showErrorAlert(err.message || "Signup failed unexpectedly");
+      setFormError(err.message || "Signup failed unexpectedly");
     } finally {
       setLoading(false);
     }
-  }, [formData]);
+  }, [formData, validateSignUp]);
 
   return {
     ...formData,
+    errors,
+    formError,
     setEmailOrUsername: (val: string) => updateField("emailOrUsername", val),
     setUsername: (val: string) => updateField("username", val),
     setPassword: (val: string) => updateField("password", val),
     setConfirmPassword: (val: string) => updateField("confirmPassword", val),
     loading,
     isLogin,
-    setIsLogin,
+    setIsLogin: toggleMode,
     signIn,
     signUp,
   };

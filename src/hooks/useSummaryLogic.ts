@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useState } from "react";
-import { Alert } from "react-native";
+import { useAlert } from "../context/AlertContext";
 import { useAuth } from "../context/AuthContext";
 import { uploadToCloudinary } from "../lib/cloudinary";
 import { supabase } from "../lib/supabase";
@@ -18,10 +18,15 @@ export const useSummaryLogic = (navigation: any) => {
   const [memory, setMemory] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const { showAlert } = useAlert();
 
   const pickImage = async () => {
     if (selectedImages.length >= 6) {
-      Alert.alert("Limit Reached", "You can only enscribe up to 6 memories.");
+      showAlert({
+        title: "Limit Reached",
+        message: "You can only enscribe up to 6 memories.",
+        type: "info",
+      });
       return;
     }
 
@@ -92,19 +97,23 @@ export const useSummaryLogic = (navigation: any) => {
           if (imagesError) throw imagesError;
         }
 
-        Alert.alert(
-          "Memory Enscribed",
-          "Your journey has been woven into time.",
-          [
-            {
-              text: "Farewell",
-              onPress: () =>
-                navigation.navigate("MainTabs", { screen: "HomeTab" }),
-            },
-          ],
-        );
+        showAlert({
+          title: "Memory Enscribed",
+          message: "Your journey has been woven into time.",
+          type: "success",
+          confirmText: "Farewell",
+          onConfirm: () =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "MainTabs", params: { screen: "HomeTab" } }],
+            }),
+        });
       } catch (e: any) {
-        Alert.alert("Error saving memory", e.message);
+        showAlert({
+          title: "Error saving memory",
+          message: e.message,
+          type: "error",
+        });
       } finally {
         setSaving(false);
       }
