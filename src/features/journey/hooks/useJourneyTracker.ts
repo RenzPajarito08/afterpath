@@ -1,12 +1,13 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceEventEmitter } from "react-native";
-import { Coordinate, getDistance } from "../lib/geometry";
+
+import { Coordinate, getDistance } from "@/lib/geometry";
 import {
   LOCATION_TRACKING_TASK,
   LOCATION_UPDATED_EVENT,
-} from "../lib/locationTasks";
-import { showErrorAlert } from "../utils/alertHelper";
+} from "@/lib/locationTasks";
+import { showErrorAlert } from "@/utils/alertHelper";
 
 export const useJourneyTracker = () => {
   const [status, setStatus] = useState({

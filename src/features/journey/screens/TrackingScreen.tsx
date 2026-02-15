@@ -12,15 +12,16 @@ import {
 } from "react-native";
 import MapView, { Polyline, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAlert } from "../context/AlertContext";
-import { useJourneyTracker } from "../hooks/useJourneyTracker";
-import { getDistance } from "../lib/geometry";
-import { retroMapStyle } from "../lib/mapStyles";
-import { RootStackParamList } from "../navigation/types";
+
+import { useAlert } from "@/context/AlertContext";
+import { useJourneyTracker } from "@/features/journey/hooks/useJourneyTracker";
+import { getDistance } from "@/lib/geometry";
+import { retroMapStyle } from "@/lib/mapStyles";
+import { RootStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Tracking">;
 
-export default function TrackingScreen({ navigation, route }: Props) {
+const TrackingScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { activityType, title } = route.params;
   const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +53,13 @@ export default function TrackingScreen({ navigation, route }: Props) {
     }
   }, [currentLocation]);
 
+  const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
   const handleEndJourney = async () => {
     stopTracking();
 
@@ -66,7 +74,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
           try {
             if (routeCoordinates.length > 5) {
-              const { snapToRoads } = await import("../lib/locationServices");
+              const { snapToRoads } = await import("@/lib/locationServices");
               const snapped = await snapToRoads(routeCoordinates);
               if (snapped.length > 0) {
                 finalCoordinates = snapped;
@@ -104,13 +112,6 @@ export default function TrackingScreen({ navigation, route }: Props) {
     });
   };
 
-  const formatDuration = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
   if (locationPermission === false) {
     return (
       <View style={styles.container}>
@@ -140,7 +141,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
 
       <View style={[styles.overlay, { bottom: Math.max(insets.bottom, 20) }]}>
         <ImageBackground
-          source={require("../../assets/parchment_texture.png")}
+          source={require("../../../../assets/parchment_texture.png")}
           style={styles.statsCard}
           imageStyle={styles.cardParchment}
           resizeMode="cover"
@@ -169,9 +170,16 @@ export default function TrackingScreen({ navigation, route }: Props) {
         </ImageBackground>
 
         <View style={styles.controls}>
-          <TouchableOpacity onPress={togglePause} activeOpacity={0.8}>
+          <TouchableOpacity
+            onPress={togglePause}
+            activeOpacity={0.8}
+            accessibilityLabel={
+              isTracking ? "Pause tracking" : "Start tracking"
+            }
+            accessibilityRole="button"
+          >
             <ImageBackground
-              source={require("../../assets/parchment_texture.png")}
+              source={require("../../../../assets/parchment_texture.png")}
               style={[styles.sealButton, styles.playPauseSeal]}
               imageStyle={styles.sealParchment}
             >
@@ -184,7 +192,12 @@ export default function TrackingScreen({ navigation, route }: Props) {
           </TouchableOpacity>
 
           {!isTracking && duration > 0 && (
-            <TouchableOpacity onPress={handleEndJourney} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={handleEndJourney}
+              activeOpacity={0.8}
+              accessibilityLabel="Stop and save journey"
+              accessibilityRole="button"
+            >
               <View style={[styles.sealButton, styles.stopSeal]}>
                 <Square size={28} color="#F7F7F2" />
               </View>
@@ -200,7 +213,7 @@ export default function TrackingScreen({ navigation, route }: Props) {
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -236,7 +249,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.4)",
-    overflow: "hidden", // Ensure children/background don't bleed out
+    overflow: "hidden",
   },
   cardParchment: {
     borderRadius: 24,
@@ -303,10 +316,10 @@ const styles = StyleSheet.create({
     borderRadius: 42,
   },
   playPauseSeal: {
-    borderColor: "#8B7355", // Bronze/Gold border
+    borderColor: "#8B7355",
   },
   stopSeal: {
-    backgroundColor: "#2F4F4F", // Forest Green
+    backgroundColor: "#2F4F4F",
     borderColor: "rgba(255,255,255,0.2)",
   },
   loadingOverlay: {
@@ -323,3 +336,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+export default TrackingScreen;

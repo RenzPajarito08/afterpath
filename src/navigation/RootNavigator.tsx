@@ -6,9 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import WelcomeScreen from "../features/auth/screens/WelcomeScreen";
 import { RootStackParamList } from "./types";
 
-import StartJourneyScreen from "@/screens/StartJourneyScreen";
-
-import TrackingScreen from "@/screens/TrackingScreen";
+import StartJourneyScreen from "@/features/journey/screens/StartJourneyScreen";
+import TrackingScreen from "@/features/journey/screens/TrackingScreen";
 
 import SummaryScreen from "@/screens/SummaryScreen";
 

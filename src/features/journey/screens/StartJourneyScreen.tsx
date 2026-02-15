@@ -1,4 +1,3 @@
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ArrowLeft,
   Bike,
@@ -7,7 +6,8 @@ import {
   Map as MapIcon,
   Mountain,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useMemo } from "react";
+import { Controller } from "react-hook-form";
 import {
   ImageBackground,
   Platform,
@@ -19,17 +19,9 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CustomInputModal } from "../components/CustomInputModal";
-import { RootStackParamList } from "../navigation/types";
 
-type StartJourneyScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "StartJourney"
->;
-
-interface Props {
-  navigation: StartJourneyScreenNavigationProp;
-}
+import { CustomInputModal } from "@/components/CustomInputModal";
+import { useStartJourneyLogic } from "@/features/journey/hooks/useStartJourneyLogic";
 
 const ACTIVITIES = [
   { id: "walking", label: "Walking", icon: Footprints },
@@ -40,53 +32,40 @@ const ACTIVITIES = [
   { id: "others", label: "Others", icon: HelpCircle },
 ];
 
-export default function StartJourneyScreen({ navigation }: Props) {
+const StartJourneyScreen: React.FC = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
-  const [selectedActivity, setSelectedActivity] = useState("walking");
-  const [title, setTitle] = useState("");
-  const [hasAttemptedStart, setHasAttemptedStart] = useState(false);
-  const [customActivity, setCustomActivity] = useState("");
-  const [showOtherModal, setShowOtherModal] = useState(false);
+  const {
+    control,
+    onSubmit,
+    errors,
+    isSubmitted,
+    selectedActivity,
+    handleActivitySelect,
+    showOtherModal,
+    setShowOtherModal,
+    customActivity,
+    onConfirmCustomActivity,
+  } = useStartJourneyLogic();
 
-  const handleStart = () => {
-    setHasAttemptedStart(true);
-    if (!title.trim()) {
-      return;
-    }
+  const scrollContentStyle = useMemo(
+    () => [styles.scrollContent, { paddingTop: Math.max(insets.top, 20) }],
+    [insets.top],
+  );
 
-    const activityType =
-      selectedActivity === "others" ? customActivity : selectedActivity;
-
-    if (selectedActivity === "others" && !customActivity) {
-      setShowOtherModal(true);
-      return;
-    }
-
-    navigation.navigate("Tracking", {
-      activityType: activityType,
-      title: title.trim(),
-    });
-  };
-
-  const handleActivitySelect = (activityId: string) => {
-    setSelectedActivity(activityId);
-    if (activityId === "others") {
-      setShowOtherModal(true);
-    }
-  };
+  const footerStyle = useMemo(
+    () => [styles.footer, { marginBottom: Math.max(insets.bottom, 20) }],
+    [insets.bottom],
+  );
 
   return (
     <ImageBackground
-      source={require("../../assets/landscape.png")}
+      source={require("../../../../assets/landscape.png")}
       style={styles.container}
       resizeMode="cover"
     >
       <KeyboardAwareScrollView
         style={styles.keyboardView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: Math.max(insets.top, 20) },
-        ]}
+        contentContainerStyle={scrollContentStyle}
         bounces={false}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
@@ -96,6 +75,8 @@ export default function StartJourneyScreen({ navigation }: Props) {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <ArrowLeft color="#F7F7F2" size={24} />
         </TouchableOpacity>
@@ -108,27 +89,32 @@ export default function StartJourneyScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Name your chronicle*"
-            value={title}
-            onChangeText={setTitle}
-            placeholderTextColor="rgba(247, 247, 242, 0.6)"
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                placeholder="Name your chronicle*"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                placeholderTextColor="rgba(247, 247, 242, 0.6)"
+                accessibilityLabel="Chronicle Name"
+              />
+            )}
           />
           <View
             style={[
               styles.inputUnderline,
-              hasAttemptedStart &&
-                !title.trim() && {
-                  backgroundColor: "#B55D5D",
-                  height: 2,
-                },
+              errors.title && {
+                backgroundColor: "#B55D5D",
+                height: 2,
+              },
             ]}
           />
-          {hasAttemptedStart && !title.trim() && (
-            <Text style={styles.validationText}>
-              A chronicle requires a name
-            </Text>
+          {errors.title && (
+            <Text style={styles.validationText}>{errors.title.message}</Text>
           )}
         </View>
 
@@ -136,15 +122,27 @@ export default function StartJourneyScreen({ navigation }: Props) {
         <View style={styles.activityGrid}>
           {ACTIVITIES.map((activity) => {
             const Icon = activity.icon;
-            const isSelected = selectedActivity === activity.id;
+            // A bit tricky because selectedActivity might be the custom one.
+            // If it's not one of the predefined IDs, then 'others' is visually selected.
+            const isPredefined = ACTIVITIES.some(
+              (a) => a.id === selectedActivity && a.id !== "others",
+            );
+            const isSelected =
+              activity.id === "others"
+                ? !isPredefined
+                : selectedActivity === activity.id;
+
             return (
               <TouchableOpacity
                 key={activity.id}
                 style={styles.activityCardContainer}
                 onPress={() => handleActivitySelect(activity.id)}
+                accessibilityLabel={activity.label}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
               >
                 <ImageBackground
-                  source={require("../../assets/parchment_texture.png")}
+                  source={require("../../../../assets/parchment_texture.png")}
                   style={styles.activityCard}
                   imageStyle={[
                     styles.cardParchment,
@@ -158,8 +156,10 @@ export default function StartJourneyScreen({ navigation }: Props) {
                       isSelected && styles.activityLabelSelected,
                     ]}
                   >
-                    {activity.id === "others" && customActivity
-                      ? customActivity
+                    {activity.id === "others" &&
+                    !isPredefined &&
+                    selectedActivity !== "others"
+                      ? selectedActivity
                       : activity.label}
                   </Text>
                 </ImageBackground>
@@ -168,10 +168,13 @@ export default function StartJourneyScreen({ navigation }: Props) {
           })}
         </View>
 
-        <View
-          style={[styles.footer, { marginBottom: Math.max(insets.bottom, 20) }]}
-        >
-          <TouchableOpacity style={styles.startButton} onPress={handleStart}>
+        <View style={footerStyle}>
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={onSubmit}
+            accessibilityLabel="Begin Journey"
+            accessibilityRole="button"
+          >
             <Text style={styles.startButtonText}>Begin Journey</Text>
           </TouchableOpacity>
         </View>
@@ -180,15 +183,12 @@ export default function StartJourneyScreen({ navigation }: Props) {
       <CustomInputModal
         visible={showOtherModal}
         onClose={() => setShowOtherModal(false)}
-        onConfirm={(val) => {
-          setCustomActivity(val);
-          setShowOtherModal(false);
-        }}
+        onConfirm={onConfirmCustomActivity}
         initialValue={customActivity}
       />
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -314,3 +314,5 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Optima-Bold" : "serif",
   },
 });
+
+export default StartJourneyScreen;
